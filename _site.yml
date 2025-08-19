@@ -1,0 +1,28 @@
+name: "."
+title: "2025 Model Workshop - Website"
+description: |
+  2025 Model Workshop - Website
+output_dir: "docs"
+navbar:
+  right:
+    - text: "Workshop Links"
+      menu:
+      - text: "Workshop Overview"
+        href: course_overview.html
+      - text: "Dataset"
+        href: dataset.html
+      - text: "Workshop Evaluation"
+        href: evaluation.html
+      - text: "Daily sessions"
+        href: index.html
+    - text: "Extra topics"
+      menu:
+      - text: "Installing R/Rstudio"
+        href: installR.html
+      - text: "Working with dates"
+        href: d1_lubridate.html
+      - text: "Using AI"
+        href: d1_ai.html
+      - text: "ggplot2"
+        href: d1_ggplot2.html
+output: distill::distill_article

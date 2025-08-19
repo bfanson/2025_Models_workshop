@@ -1,0 +1,15 @@
+---
+title: "Workshop evaluation"
+description: |
+  Evaluation of workshop
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+Below is a shiny App used for the course evaluation created using shinysurveys package with data saved in Gdrive
+
+<iframe height="600" width="100%" frameborder="no" src="https://arisci.shinyapps.io/b_WorkshopSurvey/">
+
+</iframe>
