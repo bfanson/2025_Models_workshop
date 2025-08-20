@@ -1,0 +1,39 @@
+---
+title: "Day 2: Continuous Distribution Models"
+description: |
+  Tackling continuous models
+author:
+  - name: Paul Moloney
+    url: https://bfanson.github.io/2025_Models_workshop/
+    affiliation: Arthur Rylah Institute
+    affiliation_url: https://www.ari.vic.gov.au/
+date: 2025-09-09
+output:
+  distill::distill_article:
+    self_contained: true
+    toc: true # table of content true
+    toc_float: true # make 
+    depth: 3  # upto three depths of headings (specified by #, ## and ###)
+    number_sections: false  ## if you want number sections at each table header
+    case_folding: true
+draft: false
+slug: fanson2025model
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Day's objectives
+
+-   Understand workflow, why it is important, and how to do it using Rstudio/R
+-   Assessing response variable
+
+# Key packages
+
+![](images/tidyverse.png){width="10%"} ![](images/tidyr.png){width="10%"} ![](images/dplyr.png){width="10%"} ![](images/stringr.png){width="10%"} ![](images/lubridate.png){width="10%"} ![](images/readr.png){width="10%"} ![](images/readxl.png){width="10%"}
+
+# Workshop project: Wetland Data
+
+
+

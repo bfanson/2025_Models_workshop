@@ -64,11 +64,11 @@ library(downloadthis)
 Across western and eastern Victoria, a total of 28 sites were selected to be surveyed. These sites were spread across four **C**atchment **M**anagement **A**uthorities (CMA) but with the majority of sites in the western CMAs. Sites were chosen partly to cover a wide variation in grazing intensity and grazing treatment.
 
 ```{r echo=F, fig.height=4, fig.width=7}
-  sf_site <- sf::read_sf('data/sf_site.gpkg') %>% select(-transect_id)
-  # sf_cma <- VicmapR::vicmap_query(layer='open-data-platform:cma100') %>% VicmapR::collect()
-  sf_cma <- sf::read_sf('data/sf_cma.gpkg')  
-  mapview::mapview(sf_cma, zcol='cmaname', layer.name='cma') + 
-    mapview::mapview(sf_site, zcol='grazing', layer.name='site', col.regions=c('red','blue') )
+  # sf_site <- sf::read_sf('data/sf_site.gpkg') %>% select(-transect_id)
+  # # sf_cma <- VicmapR::vicmap_query(layer='open-data-platform:cma100') %>% VicmapR::collect()
+  # sf_cma <- sf::read_sf('data/sf_cma.gpkg')  
+  # mapview::mapview(sf_cma, zcol='cmaname', layer.name='cma') + 
+  #   mapview::mapview(sf_site, zcol='grazing', layer.name='site', col.regions=c('red','blue') )
 
 ```
 
@@ -114,24 +114,4 @@ This workbook has four tabs of data.
 
 ![](images/dataset/data_main_site.PNG){width="110%"}
 
-### **spp_traits** tab
 
-![](images/dataset/data_main_spp.PNG){width="110%"}
-
-### **quad_ht** tab
-
-![](images/dataset/data_main_ht.PNG){width="45%"}
-
-### **spp_rich** tab
-
-![](images/dataset/data_main_richness.PNG){width="45%"}
-
-## **df_survey_info.csv**
-
-![](images/dataset/data_survey.PNG){width="65%"}
-
-## **df_quad_spp.csv**
-
-Note - not used in day1 but may be integrated later
-
-![](images/dataset/data_quad.PNG){width="65%"}

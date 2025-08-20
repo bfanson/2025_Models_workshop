@@ -19,10 +19,9 @@ navbar:
       menu:
       - text: "Installing R/Rstudio"
         href: installR.html
-      - text: "Working with dates"
-        href: d1_lubridate.html
+      - text: "Tips to Bayesian analyses"
+        href: help_bayes.html
       - text: "Using AI"
-        href: d1_ai.html
-      - text: "ggplot2"
-        href: d1_ggplot2.html
+        href: help_ai.html
+        
 output: distill::distill_article
