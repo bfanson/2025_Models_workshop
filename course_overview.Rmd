@@ -24,7 +24,7 @@ I would like to begin by acknowledging the traditional owners of the land on whi
 
 # Workshop Structure
 
-This is a 4-day workshop ( SEP16-19 2024) with each day running from 9am-12pm. During each day's session, we will cover a new topic in the workflow pipeline.
+This is a 4-day workshop ( SEP08-11 2025) with each day running from 9am-12pm. During each day's session, we will cover a new topic in the workflow pipeline.
 
 -   Monday: Which statistical distribution to pick (Ben)
 
