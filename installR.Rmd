@@ -29,11 +29,11 @@ To install, the order of steps are as follows (for DEECA computers):
 
         ![](images/install/r_base.PNG){width="90%"}
 
-    -   click 'Download R-4.4.1 for Windows'
+    -   click 'Download R-4.5.1 for Windows'
 
         ![](images/install/r_dwnld.PNG){width="90%"}
 
-    -   click the downloaded 'R-4.4.1-win.exe' to start install
+    -   click the downloaded 'R-4.5.1-win.exe' to start install
 
     -   when you get to install locations, install to 'C:\\Windows\\Program Files'
 
@@ -43,7 +43,7 @@ To install, the order of steps are as follows (for DEECA computers):
 
 2.  Download the version of `Rtools` matching your `R` installation: <https://cran.r-project.org/bin/windows/Rtools/>
 
-    -   click on 'RTools 4.4'
+    -   click on 'RTools 4.5'
 
         ![](images/install/rtools_select.PNG){width="90%"}
 
@@ -63,7 +63,7 @@ To install, the order of steps are as follows (for DEECA computers):
 
         ![](images/install/rstudio_select.PNG){width="90%"}
 
-    -   click on 'RStudio-2024.04.2-764.exe'
+    -   click on 'RStudio-2025.05.1-XXX.exe'
 
     -   install to 'C:\\Windows\\Data' like rtools and accept defaults
 
@@ -71,14 +71,16 @@ To install, the order of steps are as follows (for DEECA computers):
 
     ![](images/install/rstudio_screen.PNG){width="70%"}
 
-# Package Dependencies
+# R Packages for Workshop
 
-One of the strengths of `R` is that it is open-source and collaborators can contribute their own code in the form of packages. For our workshop we will be downloading some packages on the fly, but one `tidyverse` will be across days so please download ahead of time (copy code below and paste into R):
+One of the strengths of `R` is that it is open-source and collaborators can contribute their own code in the form of packages. For our workshop we will be downloading some packages on the fly.  
 
-```{r  pkg, eval = FALSE}
-install.packages(pkgs = c("tidyverse") )
+There are two packages: `tidyverse` and `brms` to download ahead of time (copy code below and paste into R):
+
+```{r  pkg, eval = FALSE,echo=T}
+install.packages(pkgs = c("tidyverse","brms") )
 ```
 
-For newbies, click on 'install' button in the `Packages` tab in lower right. Then write in 'tidyverse' and click 'Install'
+For newbies, click on 'install' button in the `Packages` tab in lower right. Then write in 'tidyverse' and click 'Install'.  Repeat process for `brms` package.
 
 ![](images/install/install_tidyverse.PNG){width="90%"}
