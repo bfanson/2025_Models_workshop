@@ -1,5 +1,5 @@
 ---
-title: "Daily Sesssions"
+title: "Daily Sessions"
 description: |
   Welcome to workshop website - strap in!
 site: distill::distill_website
