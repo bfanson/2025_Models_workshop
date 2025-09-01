@@ -19,5 +19,7 @@ navbar:
         href: installR.html
       - text: "Using AI"
         href: help_ai.html
+      - text: "Notes on ggplot2"
+        href: help_ggplot2.html
         
 output: distill::distill_article
