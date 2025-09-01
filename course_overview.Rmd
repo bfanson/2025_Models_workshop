@@ -58,7 +58,7 @@ Within each day, the session is structured to be mainly 'talk-and-chalk' for the
 -   Know what to present to their audience
 
 
-# What is it **NOT** trying to do
+# What we are **NOT** trying to do
 
 -   Turn you into a R programmer in 4 days
 -   Make you cry `r emo::ji("cry")`
