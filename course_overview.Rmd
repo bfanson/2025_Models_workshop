@@ -44,7 +44,7 @@ Within each day, the session is structured to be mainly 'talk-and-chalk' for the
 
 3.  We will have a wide range of skills across the days
 
-**Most Importantly, tea will be provided!! `r emo::ji("happy")`**
+**Most importantly, morning tea will be provided!! `r emo::ji("happy")`**
 
 
 ------------------------------------------------------------------------
