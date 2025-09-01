@@ -11,16 +11,12 @@ navbar:
         href: course_overview.html
       - text: "Dataset"
         href: dataset.html
-      - text: "Workshop Evaluation"
-        href: evaluation.html
       - text: "Daily sessions"
         href: index.html
     - text: "Extra topics"
       menu:
       - text: "Installing R/Rstudio"
         href: installR.html
-      - text: "Tips to Bayesian analyses"
-        href: help_bayes.html
       - text: "Using AI"
         href: help_ai.html
         

@@ -1,22 +1,5 @@
 [
   {
-    "path": "sessions/day2-continuous/",
-    "title": "Day 2: Continuous Distribution Models",
-    "description": "Tackling continuous models",
-    "author": [
-      {
-        "name": "Paul Moloney",
-        "url": "https://bfanson.github.io/2025_Models_workshop/"
-      }
-    ],
-    "date": "2025-09-02",
-    "categories": [],
-    "contents": "\r\n\r\nContents\r\nDay’s objectives\r\nKey packages\r\nWorkshop project: Wetland Data\r\n\r\nDay’s objectives\r\nUnderstand workflow, why it is important, and how to do it using Rstudio/R\r\nAssessing response variable\r\nKey packages\r\n\r\nWorkshop project: Wetland Data\r\n\r\n\r\n\r\n",
-    "preview": {},
-    "last_modified": "2025-08-20T13:14:01+10:00",
-    "input_file": {}
-  },
-  {
     "path": "sessions/day1-distributions/",
     "title": "Day 1: What statistical distribution to pick???",
     "description": "Gentle introduction to statistical distributions: what are they and why are they important",
