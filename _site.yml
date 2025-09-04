@@ -9,8 +9,6 @@ navbar:
       menu:
       - text: "Workshop Overview"
         href: course_overview.html
-      - text: "Dataset"
-        href: dataset.html
       - text: "Daily sessions"
         href: index.html
     - text: "Extra topics"

@@ -24,7 +24,7 @@ I would like to begin by acknowledging the traditional owners of the land on whi
 
 # Workshop Structure
 
-This is a 4-day workshop ( SEP08-11 2025) with each day running from 9am-12pm. During each day's session, we will cover a new topic in the workflow pipeline.
+This is a 4-day workshop (SEP 08-11 2025) with each day running from 9am-12pm. During each day's session, we will cover a new topic in the workflow pipeline.
 
 -   Monday: Which statistical distribution to pick (Ben)
 
@@ -34,7 +34,7 @@ This is a 4-day workshop ( SEP08-11 2025) with each day running from 9am-12pm. D
 
 -   Thursday: More advanced models (Paul)
 
-Within each day, the session is structured to be mainly 'talk-and-chalk' for the first half and then more hands-on for the second half.
+Except for Day 1, each session is structured to be mainly 'talk-and-chalk' for the first half and then more hands-on for the second half.  Day 1 will be mostly 'talk-and-chalk', interspersed with some hands-on stuff.
 
 \*\* Notes \*\*
 
@@ -87,6 +87,13 @@ Obviously, there is a course website. It is a blog-centric website and we will a
 <aside>FYI - Website is built using `distill` package and hosted by github pages</aside>
 
 By the nature of this workshop, we have limited time and cannot go in-depth.  Therefore, we have tried to distill out the key concepts/steps in the course notes, but there might be topics that need additional explanation and examples. If so, Paul and I are happy to write up a short-blurp about it and post it on the "Extra topics" in the upper right of website.
+
+
+------------------------------------------------------------------------
+
+# Previous workshop on analysis workflow
+
+As we will use R  in this workshop in Rstudio environment, it may be useful to remind yourself about *[Data analysis workflow in R](https://bfanson.github.io/2024_DADA_workshop/)*
 
 
 ------------------------------------------------------------------------
