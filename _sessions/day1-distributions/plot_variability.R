@@ -19,7 +19,7 @@ ggplot(ds,aes(y)) +  geom_density( aes(fill=id, group=id), alpha=0.6,bw=5) +
 ggplot(ds,aes(y)) +  geom_density( aes(fill=id, group=id), alpha=0.6,bw=5) +
   ggthemes::scale_fill_economist('Species') + facet_wrap(~id)
 
-library(gganimate)
-ggplot(ds,aes(y)) + geom_density( fill='blue')
+ggplot(ds,aes(y)) + geom_histogram( fill='blue', col='white') +
+  labs(y='Count', x='Fish length')
 
 

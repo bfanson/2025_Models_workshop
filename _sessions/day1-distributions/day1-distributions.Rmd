@@ -40,7 +40,7 @@ slug: fanson2025model
 
 # Collecting data for today 
 
-__Note - if online you can enter your height__
+__Note - if online, feel free to grab a fair coin as well as enter your height__
 
 As part of the presentation today, we will use data we collect from simple measurement experiments.  We have set up two stations in order to collect some data.  The data will be entered into an [online form](https://forms.office.com/Pages/ResponsePage.aspx?id=99a96Bj8SE6lVH9UeSciO_jxmSYRDoFOhTU8JmLuRA5UMlQ4WEcwTk9YT0RFUTBWMkpUVkxKUDFSRS4u)
 
@@ -73,7 +73,6 @@ __Steps:__
 3. Enter your height on the form [rough estimate fine]
 
 
-
 ------------------------------------------------------------------------
 
 
@@ -89,12 +88,9 @@ __Steps:__
 [A REMINDER TO START RECORDING]{style="color: red; font-size: 20px;font-style: italic;animation: blinker 1s linear infinite;"}
 
 
-
 -   Understand what are statistical probability distributions
--   Learn some common distributions in ecology and be able to describe their key components
--   Learn what are observation vs state processes and how it fits into statistial models
--   Learn to read(/write) statistical equations `r emo::ji("fear")`
--   Set the stage for the next three days
+-   Learn some common distributions in ecology and be able to describe their key parameters
+-   Learn what are observation vs state processes and how it fits into statistical models
 
 
 # Key packages used today
@@ -113,6 +109,36 @@ __Steps:__
 
 
 # Introduction to statistical distributions
+
+## Example: Measuring fish
+
+_Scenario:_ Measuring the length of fish at a fishway
+
+
+```{r eval=T, echo=F}
+set.seed(123)
+
+# Define distributions and types
+mu <- c(25,65,75,125)
+sd <- c(5,10,25,15)
+n=10000
+ds <- map_df( 1:length(mu), ~data.frame( id=paste0('Species ',.x), mu=mu[.x],sd=sd[.x], y=rnorm(n,mu[.x],sd[.x]) ) ) 
+
+ggplot(ds,aes(y)) + geom_histogram( fill='blue', col='white') +
+  labs(y='Count', x='Fish length (mm)')
+
+```
+
+Break up by species...
+
+```{r}
+ggplot(ds,aes(y)) +  geom_histogram( aes(fill=id, group=id), col='white') +
+  ggthemes::scale_fill_economist('Species') + facet_wrap(~id) +
+  labs(x='Fish length', y='Frequency')
+
+```
+
+
 
 ## There are lots of them...
 
@@ -522,6 +548,9 @@ set.seed(10)
 
 #  Continuous distributions
 
+__Note - we will talk more about on Day 2__
+
+
 ## Normal (aka Gaussian)
 
 <aside> Normal is also called the Gaussian after Carl Friedrich Gauss, late 1700s statistician that laid the framework of the normal distribution and foundation for the development of the Central Limit Theorem </aside>
@@ -671,6 +700,9 @@ _click on image_
 
 #  Discrete distributions
 
+__Note - we will talk more about on Day 3__
+
+
 ## Binomial(/Bernoulli)
 
 ### Rationale behind binomial
@@ -746,9 +778,6 @@ _click on image_
 ```
 
 
-
-
-
 ## Negative Binomial
 
 ### Rationale behind Negative Binomial
@@ -774,6 +803,56 @@ $$
 _click on image_
 
 [![](images/app_negbin.PNG){width="70%"}](https://arisci.shinyapps.io/DistributionsBiometrics/)
+
+
+# Mixture distributions
+
+You can combine distributions
+
+__Note - we will talk more about on Day 4__
+
+
+## Zero-inflated Poisson 
+
+### Rationale behind 
+
+_Scenario:_ 
+Surveying wetland sites to count the number of frogs from rare species 
+
+```{r fig.height=3, fig.width=7, echo=T, eval=T}
+    n_wetland=100
+    n_grid = 5
+    p= 0.8  # 80% empty
+    lambda = 2 # 2/grid
+    set.seed(123)
+    is_zero <- rbinom(n_wetland, 1, p)
+    y <- map( 1:n_wetland, ~if(is_zero[.x] == 1){rep(0,n_grid)}else{rpois(n_grid, lambda)} ) %>% flatten() %>% unlist() 
+    
+    ggplot( tibble(value = y), aes(x = y)) +
+      geom_histogram(binwidth = 1, fill = "#2c7fb8", color = "white") +
+      labs(title = "Histogram of Simulated ZIP Data",
+           x = "No. of frogs", y = "Frequency") 
+```
+
+
+__Cause of the excess zeros__
+
+1. __Structural zeros:__ Sites where frogs are truly absent (e.g., no water, wrong vegetation).
+2. __Sampling zeros:__ Sites where frogs are present but not detected during the survey.
+
+
+### Key parameters for binomial
+
+p- probability for binomial component (e.g. frogs present at the wetland)
+$\lambda$ - rate (e.g. if frogs present, density of frogs)
+
+Location: $\mu = (1-p)*\lambda$
+Variance: $\sigma^2 = (1 - p)*\lambda*(1+p*\lambda)$
+
+
+$$
+y \sim \text{ZIP}(p, \lambda)
+$$
 
 
 ------------------------------------------------------------------------
@@ -869,6 +948,7 @@ $$
 $$
 y_i \sim \text{Binomial}(p_i, N)
 $$
+
 where i = fair or weighted and $y_i = n_{successes}$
 
 #### Process component
