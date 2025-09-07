@@ -131,7 +131,7 @@ ggplot(ds,aes(y)) + geom_histogram( fill='blue', col='white') +
 
 Break up by species...
 
-```{r}
+```{r eval=T, echo=F}
 ggplot(ds,aes(y)) +  geom_histogram( aes(fill=id, group=id), col='white') +
   ggthemes::scale_fill_economist('Species') + facet_wrap(~id) +
   labs(x='Fish length', y='Frequency')
