@@ -288,6 +288,14 @@ ggplot(data, aes(factor(sample_size), mean, ymin=ci_lower, ymax=ci_upper)) +
 
 Random effects of height for quantitative genetics [e.g. hints about stabilising selection, gene-environment interactions]
 
+```{r echo=T, eval=F, fig.height=3, fig.width=8}
+# height data
+#  d <- dslabs::heights  # backup data if cannot download from form
+  d <- ds_ht %>% filter(trt=='height')
+  ggplot(d, aes( height ) ) + geom_histogram( fill='blue', col='white')
+
+```
+
 e.g. "male vulnerability hypothesis" to try to explain differing variation between human sexes
 
 ![](images/height_sex.PNG){width="80%"}
@@ -321,7 +329,7 @@ A _discrete distribution_ is a type of probability distribution that describes t
 
 
 
-### Location: means and median
+### Location: mean and median
 
 __Mean:__ $\mu = \frac{1}{n} \sum_{i=1}^{n} x_i$ [average value]
 
