@@ -1,7 +1,7 @@
 ---
 title: "Daily Sessions"
 description: |
-  Welcome to workshop website - strap in!
+  Welcome to the website. I hope you enjoy it!
 site: distill::distill_website
 listing: sessions
 ---
@@ -10,6 +10,4 @@ listing: sessions
 knitr::opts_chunk$set(echo = FALSE)
 
 ```
-
-__(To be updated during workshop)__
 

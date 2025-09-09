@@ -1,0 +1,288 @@
+---
+title: 'Day 2: Continuous models'
+description: |
+  Statistical analysis: statistical model; continuous distributions; normal; log-normal
+author:
+  - name: Paul Moloney
+    url: https://bfanson.github.io/2025_Models_workshop/
+    affiliation: Arthur Rylah Institute
+    affiliation_url: https://www.ari.vic.gov.au/
+date: 2025-09-09
+output:
+  distill::distill_article:
+    self_contained: true
+    toc: true # table of content true
+    toc_float: true # make 
+    depth: 3  # upto three depths of headings (specified by #, ## and ###)
+    number_sections: false  ## if you want number sections at each table header
+    code_folding: true # awesome buttons to show/hide the code
+    pandoc_args: ["--lua-filter=color-text.lua"]
+draft: false
+csl: ARI-report.csl
+bibliography: references.bib
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+knitr::opts_chunk$set(echo = FALSE)
+library(tidyverse)
+library(brms)
+library(DHARMa)
+library(broom.mixed)
+library(flextable)
+
+#### User defined functions ####
+## check_brms with automate some model checking for "simple" models
+check_brms <- function(model,             # brms model
+                       integer = FALSE,   # integer response? (TRUE/FALSE)
+                       plot = TRUE,       # make plot?
+                       ...                # further arguments for DHARMa::plotResiduals 
+) {
+  
+  mdata <- brms::standata(model)
+  if (!"Y" %in% names(mdata))
+    stop("Cannot extract the required information from this brms model")
+  
+  dharma.obj <- DHARMa::createDHARMa(
+    simulatedResponse = t(brms::posterior_predict(model, ndraws = 1000)),
+    observedResponse = mdata$Y, 
+    fittedPredictedResponse = apply(
+      t(brms::posterior_epred(model, ndraws = 1000, re.form = NA)),
+      1,
+      mean),
+    integerResponse = integer)
+  
+  if (isTRUE(plot)) {
+    plot(dharma.obj, ...)
+  }
+  
+  invisible(dharma.obj)
+  
+}
+
+## Setting the ARI theme for tables
+ari_theme <- function(x, ...) {
+    # x <- colformat_double(x, big.mark = ",", decimal.mark = ".", digits = 1)
+    x <- set_table_properties(x, layout = "fixed")
+    x <- border_remove(x)
+    std_border <- fp_border_default(width = 1, color = "black")
+    x <- hline_top(x, part="all", border = std_border )
+    x <- hline_bottom(x, part="all", border = std_border )
+    x <- border_inner_h(x, border = std_border, part="body")
+    x <- bg(x, bg='#004C97', part='header')
+    x <- bg(x, j = seq(2, length(dim(x)$widths), 2), bg='#CCDBEA', part='body')
+    x <- color(x, part = 'header', color = 'white')
+    x <- bold(x, part = 'header')
+    autofit(x)
+}
+```
+
+# Day's objectives
+
+-   Revise basics of linear regression with focus on Gaussion (normal) data including:
+    -   model formulation,
+    -   model assumptions,
+    -   model checking,
+-   Which results should be presented
+-   Extend to log-normal distribution
+
+# Key packages
+
+![](figures/brms.png){width="10%"}
+
+<span style="color: blue;">Please note that while we will be using brms to conduct a Bayesian analysis, the models would hold for other packages and frequentist analyses.</span>
+
+# Sex dimorphism in Murray River Turtle (*Emydura macquarii*)
+
+We are interested in confirming that in Murray River Turtles (MRT, *Emydura macquarii*) females are substantially larger than males. To this end, historical records of 85 MRT were examines and their straight carapace length (scl) (in centimetres) and sex was noted in the dataset `df_mrt.rds`.
+
+## Exploring the data and developing the model
+
+After we load the data we can compare the length distributions by using a combined boxplot and violin plot[^violin]. Figure \@ref(fig:mrt-scl) shows that the scl is larger in females.
+
+[^violin]: Violin plots are a graph type that can be used to quickly compare continuous distributions. They are a vertical (kernel) density plot reflected horizontally. Wider sections indicate more data in that area.
+
+```{r}
+#| cache: true
+df_mrt <- readRDS('data/df_mrt.RDS')
+```
+
+```{r}
+#| label: mrt-scl
+#| fig-cap: 'Combined boxplot and Violin plots of the straight carapace length measurements from Murray River Turtles separated by sex.'
+
+ggplot(df_mrt, aes(sex, scl_cm)) + geom_violin() +
+  geom_boxplot(fill = 'darkgrey', width = 0.5) +
+  geom_jitter(width = 0.1, height = 0) +
+  ylab('Straight carapace length (cm)') +
+  xlab('Sex')
+```
+
+To test if there is formal evidence of a difference we can go through the steps of the flow diagram. The data is continuous, it is not near zero and the density is (roughly) bell shaped (Figure \@ref(fig:mrt-scl)). Therefore, we can start with a normal (Gaussian) distribution.
+
+<aside>
+The analysis performed is analogous to a *t*-test comparing two means
+</aside>
+
+$$
+\text{scl_cm} \sim \text{sex}
+$$
+
+```{r}
+#| eval: false
+mod_mrt <- brm(scl_cm ~ sex, data = df_mrt, family = 'Gaussian', cores = 4)
+```
+
+```{r}
+#| cache: true
+#| include: false
+mod_mrt <- readRDS('data/mod_mrt.RDS')
+```
+
+### Checking the model converged
+
+Once we have run the model in `brms` we need to check that the model has converged by checking the Rhat and the chains. From the model output below and Figure \@ref(fig:mrt-scl-chains) the model looks to have converged.
+
+```{r}
+#| cache: true
+
+mod_mrt
+```
+
+```{r}
+#| label: mrt-scl-chains
+#| fig-cap: 'The chains from each estimated parameter in the Murray River Turtle model.'
+
+plot(mod_mrt)
+```
+
+### Checking the model assumptions
+
+Any model that we construct involves making some assumptions. These assumptions can change depending on the model. In general, the assumptions can be assessed by looking at the residuals and the posterior predictive checks.By using a package like `DHARMa` we can quickly construct residual plots like in Figure \@ref(fig:mrt-scl-resid). The QQ plot shows the expected values versus the observed values and if the points do not follow the line $y = x$ then distribution assumption is violated. The other plot relates to the assumption of equal variance, which would be violated if the medians and quartiles don't match-up.
+
+```{r}
+#| label: mrt-scl-resid
+#| fig-cap: 'Residual plots for the Murray River Turtle model.'
+#| fig-height: 6
+
+check_brms(mod_mrt)
+```
+
+Another plot to consider when checking model fit is the posterior predictive check (Figure \@ref(fig:mrt-scl-pp)). What we want to see is that the line in black (the observed data) is roughly within the bounds of the simulated data from the model. In this case it looks fine in general.
+
+```{r}
+#| label: mrt-scl-pp
+#| fig-cap: 'Posterior predictive plot for the Murray River Turtle model.'
+
+pp_check(mod_mrt, ndraws = 100)
+```
+
+## Interpreting the model outputs
+
+Now that we are happy the model has converged, we can see what the analysis is telling us.
+
+First, let's interpret the model output. The *Intercept* is effectively the default option, which in this case is the scl for female MRT. The next term is labelled *sexMale* and is the key term, as it represents the difference in scl between the mean female and mean male scl. It seems that there is a clear difference in scl, with the estimated difference being `r round(summary(mod_mrt)$fixed[2, 1], 1)` with lower and upper 95% credible intervals (95% CI[^cred]) of `r round(summary(mod_mrt)$fixed[2, 3], 1)` and `r round(summary(mod_mrt)$fixed[2, 4], 1)` respectively. To see what this looks like visually, we can plot the estimated mean values with 95% credible intervals and prediction intervals[^pred]. Figure \@ref(fig:mrt-scl-est) highlights the difference in mean scl, but also shows that not all large MRT will be female.
+
+```{r}
+#| label: mrt-scl-est
+#| fig-cap: 'A plot of the estimated straight carapace length (in centimetres) for each sex from the Murray River Turtle model. The black point is the mean, the thick grey vertical line is the 95% credible interval, while the thin grey line is the 95% prediciton interval.'
+
+prep_mrt <- df_mrt %>% select(sex) %>% distinct()
+pred_mrt <- cbind(prep_mrt, fitted(mod_mrt, newdata = prep_mrt)) %>% rename(lcl = Q2.5, ucl = Q97.5) %>%
+  cbind(as.data.frame(predict(mod_mrt, newdata = prep_mrt)) %>% select(lpl = Q2.5, upl = Q97.5))
+ggplot(pred_mrt) +
+  geom_linerange(aes(sex, Estimate, ymin = lpl, ymax = upl), linewidth = 1, alpha = 0.2) +
+  geom_linerange(aes(sex, Estimate, ymin = lcl, ymax = ucl), linewidth = 2, alpha = 0.5) +
+  geom_point(aes(sex, Estimate), size = 3) +
+  ylab('Straight carapace length (cm)') +
+  xlab('Sex')
+
+```
+
+[^cred]: Remember, that in Bayesian statistics we use credible intervals rather than confidence intervals. If the 95% CI of the parameter estimate does not include zero, then that is strong evidence that the term is having an effect on the data.
+
+[^pred]: Prediction intervals are representative of what individual responses are likely to be observed, rather than what is the likely mean response in credible intervals.
+
+### Outputs should we include in our report/manuscript
+
+In the methods of your document, you need to specify what model you used; was it frequentist or Bayesian; what packages you used to create the model; and any other assumptions that you made. For Bayesian models, you should also specify the priors that were used and how convergence of the model was assessed.
+
+::: {#method-mrt .greeting .message style="background: #CCDBEA; color: #004C97"}
+\begingroup
+\fontfamily{ppl}\selectfont
+
+<font size="4">
+
+*Statistical methods*
+
+</font>
+
+Sex dimorphism in the scl of MRT was assessed using a linear model in a Bayesian framework. The model had scl as the response variable to the single explanatory variable of the sex of the turtle.
+
+The Bayesian model was constructed in `stan` [@carpenter2017stan] via `R` [@R2025] using the package `brms` [@burkner2017brms].  Naïve prior distributions were used for each parameter estimated and the model was fitted using the No-U-Turn sampler. Parameters were estimated from four chains of 2000 iterations, 1000 of which were used as burn-in periods (total posterior samples = 4000). Model chains were run until the chains converged. Chains were considered converged using visual assessment and if all Gelman and Rubin’s convergence diagnostic potential scale reduction factors were less than 1.05 [@gelman2013bayesian]. Plots of residuals and posterior predictive checking (employing 100 samples) were used to ensure model adequacy.
+
+\endgroup
+:::
+
+In the results section you may want to produce Figure \@ref(fig:mrt-scl-est) (maybe without the prediction intervals) as well as a table with the parameter estimates and the 95% credible intervals as shown below. Depending on the audience, maybe the parameter estimate go into an appendix.
+
+```{r tbl_mrt}
+#| label: tbl_mrt_mod
+#| tbl-cap: "Parameter estimates from the Murray River Turtle straight carapace length model"
+
+tb_mod_mrt <- tidy(mod_mrt)
+imp_mrt <- (tb_mod_mrt$conf.low*tb_mod_mrt$conf.high > 0) & (tb_mod_mrt$effect == 'fixed')
+tb_mod_mrt %>%
+  select(-component, -group) %>%
+  mutate(across(where(is.numeric), ~ round(.x, 3)),
+         effect = str_to_sentence(effect),
+         effect = str_replace(effect, 'Ran_pars', 'Random'),
+         term = c('Intercept', 'Sex: Male', 'Standard deviation')) %>% flextable() %>%
+  set_header_labels(values = c('Effect', 'Parameter', 'Estimate', 'S.E.', 'Lower', 'Upper')) %>%
+  add_header_row(colwidths = c(4, 2), values = c("", "95% Credible bound")) %>%
+  align( j=4:6, align='right', part='body' ) %>%
+  bold(i = imp_mrt) %>%
+  ari_theme()
+
+```
+
+::: {#result-mrt .greeting .message style="background: #CCDBEA; color: #004C97"}
+\begingroup
+\fontfamily{ppl}\selectfont
+
+<font size="4">
+
+*Results*
+
+</font>
+
+The model shows sex dimorphism in MRT. The average female MRT has a scl of `r round(tb_mod_mrt$estimate[1], 1)`cm (95% credible interval (CI): `r round(tb_mod_mrt$conf.low[1], 1)` - `r round(tb_mod_mrt$conf.high[1], 1)`cm), with male MRT being `r -round(tb_mod_mrt$estimate[2], 1)`cm smaller (95% credible interval (CI): `r -round(tb_mod_mrt$conf.high[2], 1)` - `r -round(tb_mod_mrt$conf.low[2], 1)`cm).
+
+\endgroup
+:::
+
+Potentially you may want or need to include a more formal definition of the model. If that is required, then it would be something like:
+
+::: {#eq-mrt .greeting .message style="background: #CCDBEA; color: #004C97"}
+\begingroup
+\fontfamily{ppl}\selectfont
+
+<font size="4">
+
+*Equation*
+
+</font>
+
+The scl ($Y_i$) for any MRT is normally distributed, where the mean ($\mu_i$) is a function of their sex ($x_i$). For female MRT $x_i = 0$, while for male MRT $x_i = 1$.
+
+$$
+\begin{align}
+Y_i &\sim N(\mu_i, \sigma^2) \\
+\mu_i &= \alpha + \beta x_i
+\end{align}
+$$
+
+\endgroup
+:::

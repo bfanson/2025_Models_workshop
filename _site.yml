@@ -11,13 +11,14 @@ navbar:
         href: course_overview.html
       - text: "Daily sessions"
         href: index.html
+      - text: "Project downloads"
+        href: project_downloads.html
     - text: "Extra topics"
       menu:
       - text: "Installing R/Rstudio"
         href: installR.html
       - text: "Using AI"
         href: help_ai.html
-      - text: "Notes on ggplot2"
-        href: help_ggplot2.html
-        
+
 output: distill::distill_article
+

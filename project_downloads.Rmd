@@ -1,0 +1,33 @@
+---
+title: "Project Downloads"
+date: "`r Sys.Date()`"
+output:
+  distill::distill_article:
+    self_contained: true
+    toc: true # table of content true
+    toc_float: true # make 
+    depth: 3  # upto three depths of headings (specified by #, ## and ###)
+    number_sections: false  ## if you want number sections at each table header
+    code_folding: true # awesome buttons to show/hide the code
+draft: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+
+------------------------------------------------------------------------
+
+# Link for Day 2 Group Project
+
+[Link](https://delwpvicgovau-my.sharepoint.com/:u:/g/personal/ben_fanson_deeca_vic_gov_au/EfbKAASINEtOtWbgPx-z808BN8hhpKKN-UOKHBfLGNzK9w?e=EoNvEG)
+
+# Link for Day 3 Group Project
+
+Link
+
+# Link for Day 4 Group Project
+
+Link

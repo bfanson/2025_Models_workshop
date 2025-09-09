@@ -275,7 +275,9 @@ ggplot(data, aes(factor(sample_size), mean, ymin=ci_lower, ymax=ci_upper)) +
 ```{r echo=T, eval=F, fig.height=3, fig.width=8}
 # height data
 #  d <- dslabs::heights  # backup data if cannot download from form
-  d <- ds_ht %>% filter(trt=='measurement')
+  d <- ds_ht %>% filter(trt=='measurement', !is.na(height) ) %>% 
+          mutate( height = ifelse( height>1000, height/10, height) )
+ggplot(d, aes(height)) + geom_histogram()
   d <- map_df( 3:30, ~ data.frame( mean_ht=mean(d$height[1:.x]), 
                                              sample_size = .x, 
                                               se = sd(d$height[1:.x])/sqrt(.x)  ) )
@@ -294,6 +296,9 @@ Random effects of height for quantitative genetics [e.g. hints about stabilising
   d <- ds_ht %>% filter(trt=='height')
   ggplot(d, aes( height ) ) + geom_histogram( fill='blue', col='white')
 
+  
+  ggplot(d, aes(height, fill=sex)) + geom_density( alpha=0.6)
+  
 ```
 
 e.g. "male vulnerability hypothesis" to try to explain differing variation between human sexes
@@ -528,18 +533,21 @@ _geom_qq_line()_ - plots the reference line if the data are actually that distri
 set.seed(10)
   ds <- data.frame( normal=rnorm(100, mean=10, sd=2 ), 
                     gamma = rgamma(50, shape=2, scale=1.5 )  )
+  ggplot(ds, aes(x=normal)) + geom_histogram()
+  ggplot(ds, aes(x=gamma)) + geom_histogram()
 
 # get an estimate of parameters for gamma
   (gamma_parms <- MASS::fitdistr(ds$gamma, 'gamma') )
 
 # plot out qqplot
+  qpois()
   cowplot::plot_grid(
     ggplot(ds, aes(sample=normal)) + geom_qq() + geom_qq_line(col='blue') + 
         labs(title='Normal data vs. normal reference'),
     ggplot(ds, aes(sample=gamma)) + geom_qq() + geom_qq_line(col='blue') + 
         labs(title='Gamma data vs normal reference'),
     ggplot(ds, aes(sample=gamma)) + 
-            geom_qq(distribution = stats::qgamma,
+            geom_qq(distribution = qgamma,
                     dparams=list(shape=2.08, rate=0.60) ) + 
             geom_qq_line(col='blue',
                          distribution =stats::qgamma, 
@@ -682,6 +690,7 @@ _shape2(/beta)_: think as number of failures
 This shape parameters can be combined to define location and variance
 
 __Location:__ $\mu = \frac{\alpha}{\alpha + \beta}$
+
 __Variance:__ $\sigma^2 = \frac{\alpha \beta}{(\alpha + \beta)^2 (\alpha + \beta + 1)}$
 
 Note - range of values (0,1)
