@@ -838,7 +838,7 @@ Let's bring in the data
 
 ```{r eval=T, echo=T}
   ds_mc <- readRDS('data/df_resnag.RDS') %>% as_tibble() 
-  head(ds_gp)
+  head(ds_mc)
 ```
 
 ### Design
