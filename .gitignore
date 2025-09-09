@@ -44,7 +44,8 @@ hexsticker/
 # r_extra
 /r_extra/
 
+#rds files
+.RDS
+
 .secrets
 
-/2024_WetlandGraze/
-/docs/r_extra

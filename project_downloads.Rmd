@@ -20,14 +20,9 @@ knitr::opts_chunk$set(echo = FALSE)
 
 ------------------------------------------------------------------------
 
-# Link for Day 2 Group Project
+[Link for Day 2 Group Project](https://delwpvicgovau-my.sharepoint.com/:u:/g/personal/ben_fanson_deeca_vic_gov_au/EfbKAASINEtOtWbgPx-z808BN8hhpKKN-UOKHBfLGNzK9w?e=EoNvEG)
 
-[Link](https://delwpvicgovau-my.sharepoint.com/:u:/g/personal/ben_fanson_deeca_vic_gov_au/EfbKAASINEtOtWbgPx-z808BN8hhpKKN-UOKHBfLGNzK9w?e=EoNvEG)
 
-# Link for Day 3 Group Project
+[Link for Day 3 Group Project](https://delwpvicgovau-my.sharepoint.com/:u:/g/personal/ben_fanson_deeca_vic_gov_au/EabXXTmx9_pHsSpUepRIViIBVyTLKjmt8LM6B3jBwFn4Kg?e=dzggg9)
 
-Link
-
-# Link for Day 4 Group Project
-
-Link
+[Link for Day 4 Group Project]
