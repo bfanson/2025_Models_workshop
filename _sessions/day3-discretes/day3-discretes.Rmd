@@ -1,0 +1,949 @@
+---
+title: "Day 3: Discrete Distribution Models"
+description: |
+  Tackling discrete models: Binomial, Poisson, Negative Binomial
+author:
+  - name: Ben Fanson
+    url: https://bfanson.github.io/2025_Models_workshop/
+    affiliation: Arthur Rylah Institute
+    affiliation_url: https://www.ari.vic.gov.au/
+date: 2025-09-10
+output:
+  distill::distill_article:
+    self_contained: true
+    toc: true # table of content true
+    toc_float: true # make 
+    depth: 3  # upto three depths of headings (specified by #, ## and ###)
+    number_sections: false  ## if you want number sections at each table header
+    code_folding: true # awesome buttons to show/hide the code
+draft: false
+slug: fanson2025model
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(tidyverse)
+library(brms)
+library(DHARMa)
+library(broom.mixed)
+library(flextable)
+
+#### User defined functions ####
+## check_brms with automate some model checking for "simple" models
+check_brms <- function(model,             # brms model
+                       integer = FALSE,   # integer response? (TRUE/FALSE)
+                       plot = TRUE,       # make plot?
+                       ...                # further arguments for DHARMa::plotResiduals 
+) {
+  
+  mdata <- brms::standata(model)
+  if (!"Y" %in% names(mdata))
+    stop("Cannot extract the required information from this brms model")
+  
+  dharma.obj <- DHARMa::createDHARMa(
+    simulatedResponse = t(brms::posterior_predict(model, ndraws = 1000)),
+    observedResponse = mdata$Y, 
+    fittedPredictedResponse = apply(
+      t(brms::posterior_epred(model, ndraws = 1000, re.form = NA)),
+      1,
+      mean),
+    integerResponse = integer)
+  
+  if (isTRUE(plot)) {
+    plot(dharma.obj, ...)
+  }
+  
+  invisible(dharma.obj)
+  
+}
+
+## Setting the ARI theme for tables
+ari_theme <- function(x, ...) {
+    # x <- colformat_double(x, big.mark = ",", decimal.mark = ".", digits = 1)
+    x <- set_table_properties(x, layout = "fixed")
+    x <- border_remove(x)
+    std_border <- fp_border_default(width = 1, color = "black")
+    x <- hline_top(x, part="all", border = std_border )
+    x <- hline_bottom(x, part="all", border = std_border )
+    x <- border_inner_h(x, border = std_border, part="body")
+    x <- bg(x, bg='#004C97', part='header')
+   # x <- bg(x, j = seq(2, length(dim(x)$widths), 2), bg='#CCDBEA', part='body')
+    x <- color(x, part = 'header', color = 'white')
+    x <- bold(x, part = 'header')
+    autofit(x)
+}
+```
+
+<style>
+@keyframes blinker {
+  50% { opacity: 0; }
+}
+</style>
+
+
+[A REMINDER TO START RECORDING]{style="color: red; font-size: 20px;font-style: italic;animation: blinker 1s linear infinite;"}
+
+
+# Day's objective
+
+- Adapt Day 2's workflow to discrete distributions
+
+- highlight unique aspects of discrete data
+
+# Project to download
+
+[Link](https://delwpvicgovau-my.sharepoint.com/:u:/g/personal/ben_fanson_deeca_vic_gov_au/EXrKuYfQu4JFptAyenG9u7MBUh9QqOlDZfN59hqDogbrxQ?e=K0KVxn)
+
+# Key packages
+
+![](images/tidyverse.png){width="10%"}![](images/ggplot2.png){width="10%"}![](images/brms.png){width="10%"}![](images/broom.png){width="10%"} 
+
+# Review of analysis workflow
+
+1) understand your experimental design
+    - does the dataset match what you expect?
+    - what is the response variable?
+    - what are the main predictors(/processes)?
+
+2) graphically explore your data  (!!!!`r emo::ji("please")` !!!!)
+    - experimental design
+    - between predictors [inferential space]
+    - between response and predictors [relationships]
+
+3) modeling time
+    - model formulation (e.g. y ~ sex + habitat )
+    - model checking (e.g. convergence, residuals, simulated data)
+    - visualise fitted releationships
+
+4) repeat 2-3 until defensible model reached
+
+4) summarizing model outputs for presentation 
+
+----------------------------------------------------------------------------
+
+# Generalized Linear Models (GLM) framework
+
+__Key points__
+
+1) Most of the distributions (sans LogNormal) we have talked about come from the same family, __the Exponential family__
+    -  this means they can all be rewritten as this ugly (but beautiful) forumula: (x|θ) = h(x) exp{η(θ)ᵀT(x) - A(θ)}
+2) This unifying reality underlies development of Generalized Linear Models, which always for the same modeling framework, just need to specify the distribution (e.g. _family='poisson'_, _family='gaussian'_)
+
+3) As part of converting a distribution into the exponential family notion, there are something called the "natural" __link__ function.  Table below has the natural link function 
+
+_note -  "natural" part indicates this link has the best statistical properties.  You can use other link functions_
+
+__Table showing link functions__
+```{r, echo=F, eval=T}
+# Create the data frame
+  library(flextable)
+  ds_dist <- tibble(
+    Distribution = c("Gaussian", "Poisson", "Negative Binomial", "Log-normal", "Binomial", "Beta"),
+    Type=c('Continuous','Discrete','Discrete','Continuous','Discrete','Continuous'),
+    `No. parameters` = c(2, 1, 2, 2, 2, 2),
+    Parameters = c(
+      "Mean (μ)\n Standard deviation (σ)",
+      "Rate (λ)",
+      "Mean (μ) or size (r)\n Dispersion (θ) or probability (p)",
+      "Mean (μ)\n Standard deviation (σ)",
+      "Number of trials (n)\n Probability of success (p)",
+      "Shape parameters α (shape1)\n β (shape2)"
+    ),
+    Link=c('identity/raw','log','log','log','logit','logit'),
+    Boundary = c("(-Inf, Inf)","[0,1,2,...,Inf)","[0,1,2,...,Inf)","(0,Inf)","[0,1,2,...,n]", "(0,1)}"),
+    Rfunction = c("rnorm","rpoisson","rnbinom","rlnorm","rbinom","rbeta") 
+  ) %>% filter(Distribution!='Log-normal')
+
+ regulartable( ds_dist %>% select(Distribution, Link)  ) %>%  ari_theme()
+
+```
+
+
+
+----------------------------------------------------------------------------
+
+# Example1: Optimising detection rates of Alpine She-oak skink under tiles
+
+## Overview
+
+### Context
+
+Researchers were interested in improving detection of skink during surveys when searching a plot, allowing for better identification of areas with She-oak populations.  The logic was that placing concrete tiles in area with known skink could allow for the assessment of being able to detect skink.   The logic was that the tiles provide a thermal microhabitat as well as does not require disturbing natural shelters when surveying.  As tiles heat up by solar radiation, skinks are more likely to use them for thermoregulation.
+
+```{r  eval=T, echo=T, fig.height=3, fig.width=8}
+library(cowplot)
+cowplot::plot_grid(
+  ggdraw() + draw_image('images/rooftile.PNG'),
+  ggdraw() + draw_image('images/skink.PNG'),
+  nrow=1, scale = c(0.85,0.85),
+  labels=c('Roof tile', 'Alpine She-oak skink')
+)
+
+```
+
+### Experimental design
+
+```{r eval=T, echo=F}
+ #  ds_skink <- readRDS('data/df_ss_tile_c.RDS') %>% as_tibble() %>% 
+ #                mutate( area = rep( c('1','2'), each=n()/2 ) )
+ # saveRDS(ds_skink, 'data/df_ss_tile_c_area.RDS')
+ 
+  ds_skink <- readRDS('data/df_ss_tile_c_area.RDS') %>% as_tibble()
+  n_tiles <- nrow(ds_skink)
+  n_area <- n_distinct(ds_skink$area)
+```
+
+Here, we are using a simplified design of the original project (with simulated data).  A total of `r n_tiles` tiles were placed in `r n_area` spatial areas.   The checking of tiles was over several time periods (but that data is not included here).  When a tile was checked, the tile temperature (continuous measure) underneath was measured using an infrared thermometer.  Whether it was a sunny day (binary: yes/no) was also recorded.
+
+```{r eval=T, fig.height=3, fig.width=8}
+  ggdraw() + draw_image('images/design.PNG')
+```
+Figure showing schematic:)
+
+
+__Predictors__
+
+```{r eval=T}
+  ds_pred <- tibble( predictors = c('temperature','sunny','area'),
+                     prediction = c('increased presence with higher temps',
+                         'if sunny, heats up tile, increasing presence',
+                         'areas differ in presence of skink') )
+  regulartable(ds_pred) %>% ari_theme()
+```
+
+## Explore the data
+
+Let's bring in the data
+
+```{r eval=T, echo=T}
+# grab the data from the data folder
+  ds_skink <- readRDS('data/df_ss_tile_c_area.RDS') %>% as_tibble() %>% 
+                mutate( tile_id = paste0('tile_',sprintf('%03d',1:n() ) ) )  # unique IDs can be useful (more for repeated designs)
+  head(ds_skink)
+```  
+
+
+### Design
+
+__Recommendation:__ I always plot a visual of the design. This example is a bit simple but will still do to show as an example.
+
+What am I checking for in this visual?
+
+  - sample sizes in each sampling event (e.g. here that is just plots)
+  
+  - I will check out "sampling space" (how many sampling events in each key predictor combination) [check for missing or low sample sizes in combinations]
+  
+
+```{r eval=T, echo=F, fig.height=3, fig.width=8}
+plot_grid(
+  group_by(ds_skink, area) %>% summarise( n_unique_tiles= n_distinct(tile_id)) %>% 
+    ggplot(  aes( x=area, y= n_unique_tiles  ) ) + 
+      geom_col( fill='blue', col='black') +
+      geom_text( aes(label= paste('n=',n_unique_tiles) ), vjust=2, col='white'  ) +
+        labs( title='Total samping events per area' ),
+  group_by(ds_skink, area, sunny) %>% summarise( n_unique_tiles= n_distinct(tile_id)) %>% 
+    ggplot(  aes( x=area, y= sunny, fill= n_unique_tiles  ) ) + 
+      geom_tile( col='black', show.legend = T) +
+      geom_text( aes(label= paste('n=',n_unique_tiles) ), vjust=3, col='white'  ) +
+        labs(fill='No. tiles', title='No. sampling events per area by sunny'),
+  nrow=1
+)
+```
+
+
+### Predictors/Response
+
+__Predictors__
+
+```{r eval=T, echo=F, fig.height=3, fig.width=4}
+  ggplot(ds_skink, aes( sunny, tile_c) ) + geom_violin( fill='blue') +
+    labs(y='Tile Temp', title='Relationship between sunny and tile temp' )
+
+```
+
+__Response variable__
+
+Look at categorical plots...
+
+```{r eval=T, echo=T, fig.height=3, fig.width=8}
+ ggplot(ds_skink, aes(sunny, detected)) + 
+        geom_violin() +
+        geom_jitter( width=0.1, height=0, col='grey') + 
+        geom_point( data=group_by(ds_skink, sunny, area) %>% summarise(p=sum(detected)/n() ),
+                    aes(y=p,fill='porportion'), pch=21, size=3)  +
+        scale_fill_manual(NULL, values='red') +
+        facet_wrap(~area) + labs(title='')
+
+```
+__What does this teach us???__
+
+1) jittering of points not useful really
+2) violin plot still useful [but misleading...]
+3) overlaying raw proportion dots useful
+
+
+__Tip:__  If possible, I like to graph out what the main model will look like. Now, binary data like this is tricky as it is either 0 or 1 along a continuous predictor (e.g. temperature).  Binning can help here. 
+
+
+```{r eval=T, echo=T, fig.height=3, fig.width=8}
+# function below grabs the mid-value for a range form cut() functions
+  get_midpoints <- function(intervals) {
+    sapply(intervals, function(interval) {
+      bounds <- gsub("\\[|\\]|\\(|\\)", "", interval)
+      nums <- as.numeric(strsplit(bounds, ",")[[1]])
+      mean(nums)
+    })
+  }
+
+# plot out/explore the data
+  plotBinnedData <- function(d, n_groups=10){
+    d<- mutate( d, temp_grp = cut_interval(tile_c, n=n_groups ), 
+                   temp_mid = get_midpoints(temp_grp) ) %>% 
+              group_by(temp_mid, sunny) %>% 
+              summarise( p = sum(detected)/n(), success=sum(detected), n=n() )    
+    ggplot(ds_skink, aes(tile_c, detected, col=sunny) ) + 
+      geom_point(data=d, aes(temp_mid, p, fill=sunny, size=n), pch=21,col='black' ) +
+        scale_size_binned(range=c(0.5,3), n.breaks=5 )+
+      geom_smooth(span=2,se=F, method='gam', method.args = list(family = "binomial") ) +
+        labs( x='Tile temperature', title=paste('Binning with ',n_groups,' groups') ) +
+        coord_cartesian( ylim= c(0,0.51) )
+  }
+  cowplot::plot_grid(
+    plotBinnedData(ds_skink,10), 
+    plotBinnedData(ds_skink,15) 
+  )  
+  
+```
+
+
+
+## Picking the distribution
+
+Each tile is a sampling event and each sampling event has unique attributes (temp).  So, I would keep as N=1.  Since we have a binary response (0/1) and N=1, I am thinking Bernoulli distribution here (_note-you could use Binomial as well but selecting Bernoulli is more efficient_)
+
+
+__Observation model:__
+
+$$
+y_i \sim \text{Bernoulli}( p_i )
+$$
+
+
+__Process model:__
+
+The probability (p) is linked to the predictors via a logit link:
+
+Informal formula style:
+$$
+\text{logit}(p) = sunny * temperature + area
+$$
+
+Technical formula style:
+$$
+\text{logit}(p_i) = \beta_0 + \beta_1 * \text{sunny}_i + \beta_2 * \text{temperature}_i + \beta_3 * \text{temperature}_i*\text{sunny}_i +
+\beta_4 * \text{area}_i
+$$
+
+where _i_ is observation _i_; $\beta_1$, $\beta_3$,$\beta_4$ either 0/1 (indicator variables)
+
+
+__Link function__
+
+log odds = logit(_p_) = $log(\frac{p}{(1-p)})$ 
+
+
+In words, the odds ($\frac{p}{(1-p)}$) is of probability of success relative to it not happening.  
+
+
+_Why use logit?_
+
+1. _p_ is bounded by [0, 1] but we adopting the linear process formula of GLM requires unbounded (-Inf, Inf)  
+
+```{r eval=T, echo=T, fig.height=3, fig.width=4}
+  ds <- data.frame( p = c(0.000001, 0.001,seq( 0.01, 0.99, by=0.01),0.999,0.9999999 ) ) %>% 
+          mutate(logit_p = log(p/(1-p) ) ) 
+  ggplot(ds, aes(p, logit_p)) + geom_line() + labs(title='P vs logit(p)' )
+
+```
+
+2. The log part allows us to have additive effects used in GLMs (e.g.  ~ sunny + temperature )
+
+
+3. log odds has some nice interpret-ability properties
+  
+__Question: is increasing probability from 0.01 to 0.02 same as 0.50 to 0.51? 0.98 to 0.99?__ 
+
+Let's think about it in respect to mortality/survival rates
+
+Think about the odds $\frac{p}{(1-p)}$ again
+
+```{r eval=T, echo=T, fig.height=3, fig.width=4}
+  logit <- function(p) log(p/(1-p))
+
+  paste0(' 0.01 to 0.02 increases odds by ', round( exp( logit(0.02) - logit(0.01) ),2 ),'-fold' )
+  paste0(' 0.50 to 0.51 increases odds by ', round( exp( logit(0.51) - logit(0.50) ),2 ),'-fold' )
+  paste0(' 0.98 to 0.99 increases odds by ', round( exp( logit(0.99) - logit(0.98) ),2 ),'-fold' )
+  
+```
+
+__NOTE: This means that the parameter estimates from model will be on the logit scale__
+
+
+## Run the Model
+
+### brms model
+
+```{r eval=F, echo=T, include=F}
+  library(brms)
+  mod_skink <- brm( detected ~ sunny * tile_c + area, 
+                    data = ds_skink, family = 'Bernoulli', cores = 4)
+  mod_skink2 <- brm( detected ~ sunny * poly(tile_c,2) + area, 
+                    data = ds_skink, family = 'Bernoulli', cores = 4)
+
+ saveRDS(mod_skink, 'data/mod_skink.rds')
+ saveRDS(mod_skink2, 'data/mod_skink2.rds')
+```
+
+```{r eval=T, echo=F, include=F}
+  mod_skink <- readRDS('data/mod_skink.rds')
+  mod_skink2 <- readRDS('data/mod_skink2.rds')
+```
+
+### check convergence
+
+Check the Rhats (<1.01) in model output
+
+```{r eval=T, echo=T}
+  mod_skink
+```
+
+```{r eval=T, echo=T}
+  mod_skink2
+```
+
+
+Check the trace plots
+
+```{r eval=T, echo=T}
+  plot(mod_skink)
+```
+
+### check model assumptions
+
+Lets do DHARMa quantile approach and pp_check from Day2
+
+__Model1__
+
+```{r eval=T, echo=T,fig.height=3, fig.width=7}
+  check_brms(mod_skink)
+```
+
+```{r eval=T, echo=T,fig.height=4, fig.width=8}
+  plot_grid(pp_check(mod_skink) + labs(title='Default'), 
+            pp_check(mod_skink, type = "bars") + labs(title='Discrete') )
+
+```
+
+
+__Model2__
+
+
+```{r eval=T, echo=T,fig.height=3, fig.width=7}
+  check_brms(mod_skink2)
+```
+
+```{r eval=T, echo=T,fig.height=3, fig.width=8}
+  plot_grid(pp_check(mod_skink2) + labs(title='Default'), 
+            pp_check(mod_skink, type = "bars") + labs(title='Discrete') )
+```
+
+
+## Graph main output
+
+
+```{r eval=T, echo=T,fig.height=3, fig.width=8}
+  ds_sum <- mutate( ds_skink, temp_grp = cut_interval(tile_c, n=10 ), 
+                   temp_mid = get_midpoints(temp_grp) ) %>% 
+              group_by(temp_mid, sunny) %>% 
+              summarise( p = sum(detected)/n(), success=sum(detected), n=n() )    
+
+  ds_skink$fit <- fitted(mod_skink, newdata=mutate(ds_skink, area='1') )[,1]
+    ds_skink$fit_lo <- fitted(mod_skink, newdata=mutate(ds_skink, area='1') )[,3]
+    ds_skink$fit_hi <- fitted(mod_skink, newdata=mutate(ds_skink, area='1') )[,4]
+
+  ds_skink$fit2 <- fitted(mod_skink2, newdata=mutate(ds_skink, area='1') )[,1]
+    ds_skink$fit2_lo <- fitted(mod_skink2, newdata=mutate(ds_skink, area='1') )[,3]
+    ds_skink$fit2_hi <- fitted(mod_skink2, newdata=mutate(ds_skink, area='1') )[,4]
+plot_grid(
+  ggplot(ds_skink, aes(tile_c, detected, col=sunny) ) + 
+    geom_point(data=ds_sum, aes(temp_mid, p, fill=sunny, size=n), pch=21,col='black' ) +
+    geom_text(data=ds_sum, aes(temp_mid, p, label=n), size=2.5, hjust=-0.5, col='black' ) +
+      scale_size_binned( range=c(0.5,3), breaks=c(1,5,10,20,30,100) )+
+    geom_line( aes(y=fit ) ) + 
+    geom_ribbon( aes(ymin=fit_lo, ymax=fit_hi, fill=sunny), alpha=0.3, col=NA ) +
+      labs( x='Tile temperature', title='Linear fit'),
+  ggplot(ds_skink, aes(tile_c, detected, col=sunny) ) + 
+    geom_point(data=ds_sum, aes(temp_mid, p, fill=sunny, size=n), pch=21,col='black' ) +
+    geom_text(data=ds_sum, aes(temp_mid, p, label=n), size=2.5, hjust=-0.5, col='black' ) +
+      scale_size_binned( range=c(0.5,3), breaks=c(1,5,10,20,30,100) )+
+    geom_line( aes(y=fit2 ) ) + 
+    geom_ribbon( aes(ymin=fit2_lo, ymax=fit2_hi, fill=sunny), alpha=0.3, col=NA ) +
+          labs( x='Tile temperature', title='Quadratic fit')
+)
+
+```
+
+
+
+----------------------------------------------------------------------------
+
+# Example 2: Assessing golden perch catch rates over time at fishways in relation to discharge
+
+## Overview
+
+### Context
+
+Researchers wanted to know if golden perch catch rates increased with flow discharge in order to assess the potential role of environmental flows in management of the species
+
+
+```{r eval=T, echo=T, fig.height=3, fig.width=8}
+library(cowplot)
+cowplot::plot_grid(
+  ggdraw() + draw_image('images/fishway.PNG'),
+  ggdraw() + draw_image('images/goldenperch.jfif'),
+  nrow=1, scale = c(0.85,0.85),
+  labels=c('Fishway', 'Golden perch')
+)
+
+```
+
+### Experimental design
+
+```{r eval=T, echo=F}
+  ds_gp <- readRDS('data/df_gp.RDS') %>% as_tibble() 
+  n_month   <- n_distinct(ds_gp$month)
+  n_fishway <- n_distinct(ds_gp$fishway)
+```
+
+Again, we are using a simplified design of original project (and simulated data).  In this simplified version, researchers sampled twice a month for `r n_month` months across `r n_fishway` fishways.   
+
+__Predictors__
+
+```{r eval=T}
+  ds_pred <- tibble( predictors = c('discharge','month','fishway'),
+                     prediction = c(
+                         'flow both triggers and facilitates upstream movements in GP',
+                         'months may differ in movement rate -random effect',
+                         'fishway may differ in catch rates - random effect') )
+  regulartable(ds_pred) %>% ari_theme()
+```
+
+## Explore the data
+
+Let's bring in the data
+
+```{r eval=T, echo=T}
+  ds_gp <- readRDS('data/df_gp.RDS') %>% as_tibble() %>% 
+            mutate( month_adj = ifelse(month>8, month-8, month+4 ),
+                    month_abb=month.abb[month],
+                    discharge_gl = discharge/1000)
+  head(ds_gp)
+```
+
+### Design
+
+```{r eval=T, echo=F, fig.width=5, fig.height=4}
+  ds_mon <- distinct(ds_gp, month_adj, month_abb) %>% arrange(month_adj)
+  group_by(ds_gp, month_adj, fishway) %>% count() %>% 
+    ggplot( aes(month_adj, fishway, fill=n)) + 
+      geom_tile( ) + 
+      geom_text( aes(label=n), col='white') +
+      scale_x_continuous( breaks=ds_mon$month_adj, labels=ds_mon$month_abb )
+```
+
+### Predictors/Response
+
+Let's get an idea of how catch rates very across the fishways...
+
+
+```{r eval=T, echo=F, fig.width=8, fig.height=3}
+plot_grid(
+  ggplot(ds_gp, aes(catch)) + geom_histogram(fill='grey', color='black') + labs(title='Response'),
+  ggplot(ds_gp, aes(fishway, catch) ) + 
+    geom_violin() + geom_jitter(width=0.1, height=0.1) +
+    geom_point( data=group_by(ds_gp, fishway) %>% summarise(catch=mean(catch)),
+                pch=21, fill='red',col='black',size=3) + labs(title='Break up by fishway'),
+  nrow=1
+)
+
+```
+I want to know about month and discharge relationship...
+
+```{r eval=T, echo=F, fig.width=8, fig.height=3}
+  group_by(ds_gp, fishway, month_adj) %>% summarise( discharge=mean(discharge) )  %>% 
+  ggplot(aes(month_adj, discharge, col=fishway) ) + 
+    geom_point( ) + geom_line() +
+    scale_x_continuous( breaks=ds_mon$month_adj, labels=ds_mon$month_abb )
+
+```
+Let's look predictor relationships....
+
+```{r eval=T, echo=F}
+
+  ggplot( ds_gp, aes( discharge, catch ) ) + geom_point( aes(col=season) )+   
+    geom_smooth( method='lm') +
+    facet_wrap(~fishway)
+
+```
+
+```{r eval=T, echo=F}
+
+  ggplot( ds_gp, aes( discharge, catch ) ) + geom_point( aes(col=season) )+   
+    geom_smooth( method='lm') +
+    facet_wrap(~month)
+
+```
+
+
+## Picking the distribution
+
+__Observation model:__
+
+$$
+y_i \sim \text{Poisson}( \lambda_i )
+$$
+__Process model:__
+
+The process model will have the log link plus predictors
+
+Informal formula style:
+
+$$log(\lambda_i) = discharge + (1|month) + (1|fishway)$$
+
+Technical formula style:
+$$
+\begin{align}
+log(\lambda_i) &= \beta_0 + \beta_1 Discharge + \epsilon_{month_i} + \epsilon_{fishway_i} \\
+\epsilon_{month_i} & \sim \text{N}(0, \sigma_{month_i}^2) \\
+\epsilon_{fishway_i} & \sim \text{N}(0, \sigma_{fishway_i}^2)
+\end{align}
+$$
+
+where discharge is fixed effect and month and fishway are random effects
+
+
+### Effort and Offsets
+
+With rates (e.g. number fish/hour,  number species/transect),  the effort may vary across the survey.  For example, electrofishing time can vary or the length of transects.  As a result, the total counts need to be adjusted for those varying efforts.  
+
+Basically, the following is happening (short equation form): 
+
+$$\lambda = e^{\beta_0}*e^{\beta_1Discharge}$$
+apply link function (log)...
+
+$$log(\lambda) = log(\frac{n}{\text{effort}}) = \beta_0 + \beta_1 Discharge$$
+$$\log\left(\frac{n}{\text{effort}}\right) = \log(n) - \log(\text{effort})$$
+
+$$log(\lambda) = log(\frac{n}{\text{effort}}) =  \log(n) - \log(\text{effort})=\beta_0 + \beta_1 Discharge$$
+$$log(\lambda) = \beta_0 + \beta_1 Discharge + \log(\text{effort})$$
+
+<div style="border: 1px solid #ccc; background-color: #f9f9f9; padding: 10px; margin: 10px 0;">
+**R code: :** brm( catch ~ offset(effort) + ... )
+</div>
+
+
+## Run the Model
+
+### brms model
+
+```{r eval=F,  include=T}
+  mod_gp <- brm( catch ~ discharge_gl + (1|month) + (1|fishway), data=ds_gp, 
+                 family=poisson, control=list(adapt_delta=0.95)  )
+     saveRDS(mod_gp,'data/mod_gp.rds')
+```
+     
+     
+```{r eval=T,  include=F}
+  mod_gp <- readRDS('data/mod_gp.rds')
+```
+
+
+### check convergence
+
+Check the Rhats (<1.01) in model output
+
+```{r eval=T, echo=T}
+  mod_gp
+```
+
+Check the trace plots
+
+```{r eval=T, echo=T}
+  plot(mod_gp)
+```
+
+### check model assumptions
+
+Lets do DHARMa quantile approach and pp_check from Day2
+
+
+```{r eval=T, echo=T,fig.height=5, fig.width=8}
+  check_brms(mod_gp)
+```
+
+```{r eval=T, echo=T,fig.height=3, fig.width=8}
+   plot_grid(pp_check(mod_gp) + labs(title='Default'), 
+            pp_check(mod_gp, type = "bars") + labs(title='Discrete') )
+```
+
+```{r eval=T, echo=T,fig.height=3, fig.width=4}
+  ds_gp$fit <- fitted(mod_gp, re_formula = NA)[,1]
+  ds_gp$resid <- residuals(mod_gp,type = 'pearson')[,1]
+  ggplot(ds_gp, aes(fit, resid) ) + geom_point() + geom_smooth()
+
+```
+
+
+
+## Graph main output
+
+```{r eval=T, echo=T,fig.height=3, fig.width=4}
+  ds_gp$fit <- fitted(mod_gp, re_formula = NA)[,1]
+  ds_gp$fit_lo <- fitted(mod_gp, re_formula = NA)[,3]
+  ds_gp$fit_hi <- fitted(mod_gp, re_formula = NA)[,4]
+  ggplot(ds_gp, aes(discharge) ) + 
+    geom_point( aes( y=catch), pch=21, fill='grey', col='black' ) +
+    geom_line( aes(y=fit) ) +
+    geom_ribbon( aes(ymin=fit_lo, ymax=fit_hi), alpha=0.3, col=NA ) +
+      labs( x='Discharge (ML/day)', y='Catch (n/event)')
+
+```
+
+
+---------------------------------------------------------------
+
+
+# Example 3: Murray Cod response to resnagging
+
+## Overview
+
+### Context
+
+Researchers want to know if adding instream woody habitat (IWH) increases Murray cod abundance.  IWH is likely critical habitat for Murray cod which use the IWH as microhabitat both for protection as well as ambushing prey.  
+
+
+```{r eval=T, echo=T,fig.height=3, fig.width=8}
+library(cowplot)
+cowplot::plot_grid(
+  ggdraw() + draw_image('images/iwh.jfif'),
+  ggdraw() + draw_image('images/murraycod.jpg'),
+  nrow=1, scale = c(0.85,0.85),
+  labels=c('Instream Woody Habitat (IWH)', 'Golden perch')
+)
+
+```
+
+### Experimental design
+
+```{r eval=T, echo=F}
+  ds_mc <- readRDS('data/df_resnag.RDS') %>% as_tibble() 
+  n_reach <- n_distinct(str_split_fixed(ds_mc$reach_id,'_',2)[,2])
+  n_year <- n_distinct(ds_mc$year)
+```
+
+Again, we are using simulated data of an actual experiment.  The researchers were commissioned to add enhance riverine habitat in the Ovens river. Two methods of enhancement was undertaken, basic and IWH, at `r n_reach` reaches. As a "control", `r n_reach` reaches at a comparable river was chosen that did not have any riverine improvement.  Over `r n_year` years, annual surveys were undertaken to count Murray cod caught.
+
+__Predictors__
+
+```{r eval=T}
+  ds_pred <- tibble( predictors = c('year','works','reach'),
+                     prediction = c('change in catch rates over time',
+                                    'treatment of interest',
+                                    'reach effects - random effect') )
+  regulartable(ds_pred) %>% ari_theme()
+```
+
+## Explore the data
+
+Let's bring in the data
+
+```{r eval=T, echo=T}
+  ds_mc <- readRDS('data/df_resnag.RDS') %>% as_tibble() 
+  head(ds_gp)
+```
+
+### Design
+
+Let check the design
+
+```{r eval=T, echo=F, fig.width=5, fig.height=4}
+  ds_sum <- distinct(ds_mc, works, reach_id,year) %>%  
+              mutate(reach_id=str_split_fixed(reach_id,'_',2)[,2])
+  group_by(ds_sum, works, reach_id) %>% count() %>% 
+    ggplot( aes(works, reach_id, fill=n)) + 
+      geom_tile( col='black' ) + 
+      geom_text( aes(label=n), col='white') +
+          labs( title='Design: number of sampling events' )
+```
+
+### Predictors/Response
+
+Let's get an idea of the catch rate variable across reaches ...
+
+
+```{r eval=T, echo=F, fig.width=8, fig.height=3}
+plot_grid(
+  ggplot(ds_mc, aes(catch) ) + geom_histogram(aes(fill=works), binwidth = 3, color='black') + labs(title='Response') + theme(legend.position=c(0.8,0.8)),
+  ggplot(ds_mc, aes(reach_id, catch, fill=works) ) + 
+    geom_violin() + geom_jitter(width=0.1, height=0.1) + coord_flip()+ theme(legend.position='none'),
+  nrow=1
+)
+
+```
+
+
+Let's visualise the likely model...
+
+```{r eval=T, echo=F, fig.width=8, fig.height=3}
+plot_grid(
+  ggplot(ds_mc, aes(year, catch, col=works) ) + 
+    geom_point() + geom_smooth(se=F, span=1) +
+    labs(title='Raw scale'),
+  ggplot(ds_mc, aes(year, catch+1, col=works) ) + 
+    geom_point() + geom_smooth(se=F, span=1) + scale_y_log10() +
+    labs(title='Log10 version')
+)
+
+```
+
+## Picking the distribution
+
+__Observation model:__
+
+$$
+y_i \sim \text{NB}( \mu_i, \theta )
+$$
+__Process model:__
+
+The process model will have the log link and the predictors
+
+Informal formula style:
+
+$$
+log(\mu_i) = year * works + (1|reach)
+$$
+
+Technical formula style:
+$$
+\begin{align}
+log(\mu_i) &= \beta_0 + \beta_1 year + \beta_2 works + \beta_3 (year*works) + \epsilon_{reach_i} \\
+\epsilon_{reach_i} & \sim \text{N}(0, \sigma_{reach_i}^2)
+\end{align}
+$$
+
+where discharge is a fixed effect and month and fishway are random effects
+
+
+## Run the Model
+
+### brms model
+
+```{r eval=F, echo=T, include=T}
+  library(brms)
+  mod_mc <- brm( catch ~ year*works + (1|reach_id) , data=ds_mc, family=negbinomial()  )
+     saveRDS(mod_mc,'data/mod_mc.rds')
+```
+
+
+```{r eval=T,  include=F}
+ mod_mc <- readRDS('data/mod_mc.rds')
+
+```
+
+### check convergence
+
+Check the Rhats (<1.01) in model output
+
+```{r eval=T}
+  mod_mc
+```
+__Tip: Check the shape parameter estimate (shape = $\theta$ = "clumped").  If $\theta$>10, then worth re-running as Poisson__
+
+
+
+Check the trace plots
+
+```{r eval=T, echo=T}
+  plot(mod_mc)
+```
+
+### check model assumptions
+
+Lets do DHARMa quantile approach and pp_check from Day2
+
+__DHARMa__
+
+```{r  eval=T, echo=T, fig.height=5, fig.width=8}
+  check_brms(mod_mc)
+```
+
+__PP check__
+
+```{r  eval=T, echo=T, fig.height=3, fig.width=5}
+  pp_check(mod_mc) + labs(title='Default')
+```
+
+__Residuals vs fitted__
+
+```{r  eval=T, echo=T, fig.height=5, fig.width=4}
+  ds_mc$fit <- fitted(mod_mc, re_formula = NA)[,1]
+  ds_mc$resid <- residuals(mod_mc,type = 'pearson')[,1]
+  plot_grid(
+    ggplot(ds_mc, aes(fit, resid) ) + geom_point() + geom_smooth(),
+    ggplot(ds_mc, aes(year, resid) ) + geom_point() + geom_smooth() +
+        facet_wrap(~works),
+    ncol=1
+  )
+```
+
+## Graph main output
+
+```{r  eval=T, echo=T, fig.height=3, fig.width=8}
+  ds_mc$fit <- fitted(mod_mc, re_formula = NA)[,1]
+  ds_mc$fit_lo <- fitted(mod_mc, re_formula = NA)[,3]
+  ds_mc$fit_hi <- fitted(mod_mc, re_formula = NA)[,4]
+  ggplot(ds_mc, aes(year, col=works, fill=works) ) + 
+    geom_point( aes( y=catch), pch=21,  col='black' ) +
+    geom_line( aes(y=fit) ) +
+    geom_ribbon( aes(ymin=fit_lo, ymax=fit_hi), alpha=0.3, col=NA ) +
+      labs( x='Discharge (ML/day)', y='Catch (n/event)') + 
+      facet_wrap(~works, nrow=1) + theme(legend.position = 'none')
+
+```
+
+
+---------------------------------------------------------------
+
+# Group Exercises
+
+_(Assuming we have enough time...)_
+
+Like yesterday, get in small groups and attempt one of the following small analysis tasks.  Today's tasks will use the same examples from above.
+
+1. Using the skink dataset, re-run the model as using the Binomial distribution.  This will involve the following task:
+- grouping the data into temperature bins (and getting the number of successes per bin)
+- using  brm(  success|trials(n) ~ ..., data=data, family=binomial ) model formulation
+- check the diagnostics
+- plotting out the fitted model
+
+2. For the Murray cod model, re-run the model using a Poisson distribution.  Check the diagnostics to see issues that emerge.
+
+3. For the Murray cod model, re-run the model summing all catch to each year for each works treatment.  Compare the estimates from this model to the lecture's one.
+
+
+
+
+
+
+
+
