@@ -27,6 +27,7 @@ library(brms)
 library(DHARMa)
 library(broom.mixed)
 library(flextable)
+library(cowplot)
 
 #### User defined functions ####
 ## check_brms with automate some model checking for "simple" models
@@ -126,7 +127,11 @@ ari_theme <- function(x, ...) {
 __Key points__
 
 1) Most of the distributions (sans LogNormal) we have talked about come from the same family, __the Exponential family__
-    -  this means they can all be rewritten as this ugly (but beautiful) forumula: (x|θ) = h(x) exp{η(θ)ᵀT(x) - A(θ)}
+    -  this means they can all be rewritten as this ugly (but beautiful) formula: 
+<div style="border: 1px solid #ccc; background-color: #f9f9f9; padding: 10px; margin: 10px 0;">
+f(x|θ) = h(x) exp{η(θ)ᵀT(x) - A(θ)}
+</div>
+
 2) This unifying reality underlies development of Generalized Linear Models, which always for the same modeling framework, just need to specify the distribution (e.g. _family='poisson'_, _family='gaussian'_)
 
 3) As part of converting a distribution into the exponential family notion, there are something called the "natural" __link__ function.  Table below has the natural link function 
@@ -171,8 +176,7 @@ __Table showing link functions__
 Researchers were interested in improving detection of skink during surveys when searching a plot, allowing for better identification of areas with She-oak populations.  The logic was that placing concrete tiles in area with known skink could allow for the assessment of being able to detect skink.   The logic was that the tiles provide a thermal microhabitat as well as does not require disturbing natural shelters when surveying.  As tiles heat up by solar radiation, skinks are more likely to use them for thermoregulation.
 
 ```{r  eval=T, echo=T, fig.height=3, fig.width=8}
-library(cowplot)
-cowplot::plot_grid(
+plot_grid(
   ggdraw() + draw_image('images/rooftile.PNG'),
   ggdraw() + draw_image('images/skink.PNG'),
   nrow=1, scale = c(0.85,0.85),
@@ -198,7 +202,6 @@ Here, we are using a simplified design of the original project (with simulated d
 ```{r eval=T, fig.height=3, fig.width=8}
   ggdraw() + draw_image('images/design.PNG')
 ```
-Figure showing schematic:)
 
 
 __Predictors__
@@ -304,11 +307,13 @@ __Tip:__  If possible, I like to graph out what the main model will look like. N
     ggplot(ds_skink, aes(tile_c, detected, col=sunny) ) + 
       geom_point(data=d, aes(temp_mid, p, fill=sunny, size=n), pch=21,col='black' ) +
         scale_size_binned(range=c(0.5,3), n.breaks=5 )+
-      geom_smooth(span=2,se=F, method='gam', method.args = list(family = "binomial") ) +
+      geom_text(data=d, aes(temp_mid, p, label=n), size=2.5, hjust=-0.5, col='black' ) +
+        scale_size_binned( range=c(0.5,3), breaks=c(1,5,10,20,30,100) )+
+    geom_smooth(span=2,se=F, method='gam', method.args = list(family = "binomial") ) +
         labs( x='Tile temperature', title=paste('Binning with ',n_groups,' groups') ) +
         coord_cartesian( ylim= c(0,0.51) )
   }
-  cowplot::plot_grid(
+  plot_grid(
     plotBinnedData(ds_skink,10), 
     plotBinnedData(ds_skink,15) 
   )  
@@ -328,6 +333,12 @@ $$
 y_i \sim \text{Bernoulli}( p_i )
 $$
 
+Or could do the following:
+$$
+y_i \sim \text{Binomial}( p_i, 1 )
+$$
+
+
 
 __Process model:__
 
@@ -340,7 +351,7 @@ $$
 
 Technical formula style:
 $$
-\text{logit}(p_i) = \beta_0 + \beta_1 * \text{sunny}_i + \beta_2 * \text{temperature}_i + \beta_3 * \text{temperature}_i*\text{sunny}_i +
+\text{logit}(p_i) = \alpha + \beta_1 * \text{sunny}_i + \beta_2 * \text{temperature}_i + \beta_3 * \text{temperature}_i*\text{sunny}_i +
 \beta_4 * \text{area}_i
 $$
 
@@ -386,7 +397,39 @@ Think about the odds $\frac{p}{(1-p)}$ again
   
 ```
 
-__NOTE: This means that the parameter estimates from model will be on the logit scale__
+__Interpreting parameters estimates from model__
+
+For binomial GLM, this means that the parameter estimates from model will be on the logit scale and the $\beta1
+
+
+Let's take a simple model glm( success ~ sunny )...
+
+$\text{logit}(p_i) = \alpha + \beta_1 * \text{sunny}_i$ 
+
+
+$\text{logit}(p_{no,i}) = \alpha + \text{sunny}_i$ when sunny=no, $\beta_1$ = 0
+
+
+$\text{logit}(p_{yes,i}) = \alpha + 1 * \text{sunny}_i$ when sunny=yes, $\beta_1$ = 1 
+
+
+$\beta_1 = \text{logit}(p_{yes}) - \text{logit}(p_{no}) = log(\frac{\text{odds }p_{yes}}{\text{odds } p_{no}})$
+
+
+_What does this all mean_
+
+When interpreting $\beta$ on the logit...
+
+  - __$\beta$ > 0__ - increasing log odds
+  - __$\beta$ < 0__ - decreasing log odds
+
+
+When interpreting $e^\beta$...
+
+  - __$e^\beta$ > 1__ - fold increase in odds
+  - __$e^\beta$ < 0__ - fold-decrease in odds
+  
+  
 
 
 ## Run the Model
@@ -396,9 +439,9 @@ __NOTE: This means that the parameter estimates from model will be on the logit 
 ```{r eval=F, echo=T, include=F}
   library(brms)
   mod_skink <- brm( detected ~ sunny * tile_c + area, 
-                    data = ds_skink, family = 'Bernoulli', cores = 4)
+                    data = ds_skink, family = 'Bernoulli')
   mod_skink2 <- brm( detected ~ sunny * poly(tile_c,2) + area, 
-                    data = ds_skink, family = 'Bernoulli', cores = 4)
+                    data = ds_skink, family = 'Bernoulli')
 
  saveRDS(mod_skink, 'data/mod_skink.rds')
  saveRDS(mod_skink2, 'data/mod_skink2.rds')
@@ -458,6 +501,7 @@ __Model2__
 ```
 
 
+
 ## Graph main output
 
 
@@ -494,6 +538,31 @@ plot_grid(
 ```
 
 
+### Which model to pick
+
+1)  Check coefficients for strong evidence
+
+```{r eval=T, include=T}
+  mod_skink2
+```
+
+2) Compare Bayesian models using LOO 
+
+```{r eval=F, include=T}
+  loo_compare( loo(mod_skink), loo(mod_skink2), moment_match=F )
+```
+
+3) Compare to model selection using frequentist's approach [robust are the findings]
+
+```{r eval=T, include=T}
+  m1 <- glm( formula(mod_skink ), data=ds_skink, family=binomial )  
+  m2 <- glm( formula(mod_skink2), data=ds_skink, family=binomial )  
+
+  left_join( rownames_to_column(AIC( m1, m2)), BIC( m1, m2) )
+
+```
+  
+
 
 ----------------------------------------------------------------------------
 
@@ -508,7 +577,7 @@ Researchers wanted to know if golden perch catch rates increased with flow disch
 
 ```{r eval=T, echo=T, fig.height=3, fig.width=8}
 library(cowplot)
-cowplot::plot_grid(
+plot_grid(
   ggdraw() + draw_image('images/fishway.PNG'),
   ggdraw() + draw_image('images/goldenperch.jfif'),
   nrow=1, scale = c(0.85,0.85),
@@ -623,7 +692,7 @@ $$log(\lambda_i) = discharge + (1|month) + (1|fishway)$$
 Technical formula style:
 $$
 \begin{align}
-log(\lambda_i) &= \beta_0 + \beta_1 Discharge + \epsilon_{month_i} + \epsilon_{fishway_i} \\
+log(\lambda_i) &= \alpha + \beta_1 Discharge + \epsilon_{month_i} + \epsilon_{fishway_i} \\
 \epsilon_{month_i} & \sim \text{N}(0, \sigma_{month_i}^2) \\
 \epsilon_{fishway_i} & \sim \text{N}(0, \sigma_{fishway_i}^2)
 \end{align}
@@ -638,14 +707,14 @@ With rates (e.g. number fish/hour,  number species/transect),  the effort may va
 
 Basically, the following is happening (short equation form): 
 
-$$\lambda = e^{\beta_0}*e^{\beta_1Discharge}$$
+$$\lambda = e^{\alpha}*e^{\beta_1Discharge}$$
 apply link function (log)...
 
-$$log(\lambda) = log(\frac{n}{\text{effort}}) = \beta_0 + \beta_1 Discharge$$
+$$log(\lambda) = log(\frac{n}{\text{effort}}) = \alpha + \beta_1 Discharge$$
 $$\log\left(\frac{n}{\text{effort}}\right) = \log(n) - \log(\text{effort})$$
 
-$$log(\lambda) = log(\frac{n}{\text{effort}}) =  \log(n) - \log(\text{effort})=\beta_0 + \beta_1 Discharge$$
-$$log(\lambda) = \beta_0 + \beta_1 Discharge + \log(\text{effort})$$
+$$log(\lambda) = log(\frac{n}{\text{effort}}) =  \log(n) - \log(\text{effort})=\alpha + \beta_1 Discharge$$
+$$log(\lambda) = \alpha + \beta_1 Discharge + \log(\text{effort})$$
 
 <div style="border: 1px solid #ccc; background-color: #f9f9f9; padding: 10px; margin: 10px 0;">
 **R code: :** brm( catch ~ offset(effort) + ... )
@@ -734,7 +803,7 @@ Researchers want to know if adding instream woody habitat (IWH) increases Murray
 
 ```{r eval=T, echo=T,fig.height=3, fig.width=8}
 library(cowplot)
-cowplot::plot_grid(
+plot_grid(
   ggdraw() + draw_image('images/iwh.jfif'),
   ggdraw() + draw_image('images/murraycod.jpg'),
   nrow=1, scale = c(0.85,0.85),
@@ -836,7 +905,7 @@ $$
 Technical formula style:
 $$
 \begin{align}
-log(\mu_i) &= \beta_0 + \beta_1 year + \beta_2 works + \beta_3 (year*works) + \epsilon_{reach_i} \\
+log(\mu_i) &= \alpha + \beta_1 year + \beta_2 works + \beta_3 (year*works) + \epsilon_{reach_i} \\
 \epsilon_{reach_i} & \sim \text{N}(0, \sigma_{reach_i}^2)
 \end{align}
 $$

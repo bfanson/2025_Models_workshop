@@ -47,5 +47,8 @@ hexsticker/
 #rds files
 .RDS
 
+_sessions/day3-discretes/data/
+_sessions/day3-discretes/day3-discretes.html
+
 .secrets
 
