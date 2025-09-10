@@ -811,10 +811,12 @@ Lets do DHARMa quantile approach and pp_check from Day2
 
 ```
 
-```{r}
+Slope estimates for each treatment (fold-change)
 
-mod_gp
-
+```{r eval=T, include=T, fig.height=3, fig.width=5}
+  library(emmeans)
+  emtrends(mod_gp, ~1, var='discharge_gl') 
+  
 ```
 
 
@@ -1006,6 +1008,8 @@ __Residuals vs fitted__
 
 ## Graph main output
 
+
+Fitted plot...
 ```{r  eval=T, echo=T, fig.height=3, fig.width=8}
   ds_mc$fit <- fitted(mod_mc, re_formula = NA)[,1]
   ds_mc$fit_lo <- fitted(mod_mc, re_formula = NA)[,3]
@@ -1019,6 +1023,24 @@ __Residuals vs fitted__
 
 ```
 
+
+Slope estimates for each treatment (fold-change)
+
+```{r eval=T, include=T, fig.height=3, fig.width=5}
+  library(emmeans)
+  emtrends(mod_mc, ~works, var='year') %>% data.frame() %>% 
+    ggplot( aes(works, y= exp(year.trend), ymin= exp(lower.HPD), ymax= exp(upper.HPD) ) ) +
+      geom_hline(yintercept=1, lty=2) +
+      geom_pointrange() + labs(x='Treatment', y='Year-fold change')
+  
+```
+
+Pairwise contrasts between slopes (on log-scale)...
+
+```{r eval=T, include=T, fig.height=3, fig.width=5}
+  library(emmeans)
+  emtrends(mod_mc, pairwise~works, var='year')$contrast %>% data.frame() 
+```
 
 ---------------------------------------------------------------
 

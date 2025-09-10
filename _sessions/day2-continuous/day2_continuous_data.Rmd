@@ -26,12 +26,11 @@ bibliography: references.bib
 #| label: setup
 #| include: false
 
-knitr::opts_chunk$set(echo = FALSE)
 library(tidyverse)
 library(brms)
+library(flextable)
 library(DHARMa)
 library(broom.mixed)
-library(flextable)
 
 #### User defined functions ####
 ## check_brms with automate some model checking for "simple" models
@@ -77,6 +76,7 @@ ari_theme <- function(x, ...) {
     x <- bold(x, part = 'header')
     autofit(x)
 }
+
 ```
 
 # Day's objectives
@@ -88,6 +88,11 @@ ari_theme <- function(x, ...) {
 -   Which results should be presented
 -   Extend to log-normal distribution
 
+# Project to download
+
+[Link](https://delwpvicgovau-my.sharepoint.com/:u:/g/personal/ben_fanson_deeca_vic_gov_au/EfbKAASINEtOtWbgPx-z808BN8hhpKKN-UOKHBfLGNzK9w?e=bhvsRX)
+
+
 # Key packages
 
 ![](figures/brms.png){width="10%"}
@@ -96,11 +101,11 @@ ari_theme <- function(x, ...) {
 
 # Sex dimorphism in Murray River Turtle (*Emydura macquarii*)
 
-We are interested in confirming that in Murray River Turtles (MRT, *Emydura macquarii*) females are substantially larger than males. To this end, historical records of 85 MRT were examines and their straight carapace length (scl) (in centimetres) and sex was noted in the dataset `df_mrt.rds`.
+We are interested in confirming that in Murray River Turtles (MRT, *Emydura macquarii*) females are substantially larger than males. To this end, historical records of 85 MRT were examines and their straight carapace length (scl) (in centimetres) and sex was noted in the dataset `df_mrt.RDS`.
 
 ## Exploring the data and developing the model
 
-After we load the data we can compare the length distributions by using a combined boxplot and violin plot[^violin]. Figure \@ref(fig:mrt-scl) shows that the scl is larger in females.
+After we load the data we can compare the length distributions by using a combined boxplot and violin plot[^violin]. @fig-mrt-scl shows that the scl is larger in females.
 
 [^violin]: Violin plots are a graph type that can be used to quickly compare continuous distributions. They are a vertical (kernel) density plot reflected horizontally. Wider sections indicate more data in that area.
 
@@ -110,7 +115,7 @@ df_mrt <- readRDS('data/df_mrt.RDS')
 ```
 
 ```{r}
-#| label: mrt-scl
+#| label: fig-mrt-scl
 #| fig-cap: 'Combined boxplot and Violin plots of the straight carapace length measurements from Murray River Turtles separated by sex.'
 
 ggplot(df_mrt, aes(sex, scl_cm)) + geom_violin() +
@@ -120,15 +125,13 @@ ggplot(df_mrt, aes(sex, scl_cm)) + geom_violin() +
   xlab('Sex')
 ```
 
-To test if there is formal evidence of a difference we can go through the steps of the flow diagram. The data is continuous, it is not near zero and the density is (roughly) bell shaped (Figure \@ref(fig:mrt-scl)). Therefore, we can start with a normal (Gaussian) distribution.
+To test if there is formal evidence of a difference we can go through the steps of the flow diagram. The data is continuous, it is not near zero and the density is (roughly) bell shaped (@fig-mrt-scl). Therefore, we can start with a normal (Gaussian) distribution. The model has scl as a response to the explanatory variable of the sex of the MRT.
 
 <aside>
-The analysis performed is analogous to a *t*-test comparing two means
+The analysis performed is analogous to a *t*-test comparing two means with equal variance
 </aside>
 
-$$
-\text{scl_cm} \sim \text{sex}
-$$
+$$\text{scl_cm} \sim \text{sex}$$
 
 ```{r}
 #| eval: false
@@ -143,7 +146,7 @@ mod_mrt <- readRDS('data/mod_mrt.RDS')
 
 ### Checking the model converged
 
-Once we have run the model in `brms` we need to check that the model has converged by checking the Rhat and the chains. From the model output below and Figure \@ref(fig:mrt-scl-chains) the model looks to have converged.
+Once we have run the model in `brms` we need to check that the model has converged by checking the Rhat and the chains. From the model output below and @fig-mrt-scl-chains the model looks to have converged.
 
 ```{r}
 #| cache: true
@@ -152,7 +155,7 @@ mod_mrt
 ```
 
 ```{r}
-#| label: mrt-scl-chains
+#| label: fig-mrt-scl-chains
 #| fig-cap: 'The chains from each estimated parameter in the Murray River Turtle model.'
 
 plot(mod_mrt)
@@ -160,20 +163,24 @@ plot(mod_mrt)
 
 ### Checking the model assumptions
 
-Any model that we construct involves making some assumptions. These assumptions can change depending on the model. In general, the assumptions can be assessed by looking at the residuals and the posterior predictive checks.By using a package like `DHARMa` we can quickly construct residual plots like in Figure \@ref(fig:mrt-scl-resid). The QQ plot shows the expected values versus the observed values and if the points do not follow the line $y = x$ then distribution assumption is violated. The other plot relates to the assumption of equal variance, which would be violated if the medians and quartiles don't match-up.
+Any model that we construct involves making some assumptions. These assumptions can change depending on the model. In general, the assumptions can be assessed by looking at the residuals and the posterior predictive checks.By using a package like `DHARMa` we can quickly construct residual plots like in @fig-mrt-scl-resid. The QQ plot shows the expected values versus the observed values and if the points do not follow the line $y = x$ then distribution assumption is violated. The other plot relates to the assumption of equal variance, which would be violated if the medians and quartiles don't match-up.
+
+<aside>
+**Remember** it is the residuals from the model that need to follow the distribution, not the raw response variable.
+</aside>
 
 ```{r}
-#| label: mrt-scl-resid
+#| label: fig-mrt-scl-resid
 #| fig-cap: 'Residual plots for the Murray River Turtle model.'
 #| fig-height: 6
 
 check_brms(mod_mrt)
 ```
 
-Another plot to consider when checking model fit is the posterior predictive check (Figure \@ref(fig:mrt-scl-pp)). What we want to see is that the line in black (the observed data) is roughly within the bounds of the simulated data from the model. In this case it looks fine in general.
+Another plot to consider when checking model fit is the posterior predictive check (@fig-mrt-scl-pp). What we want to see is that the line in black (the observed data) is roughly within the bounds of the simulated data from the model. In this case it looks fine in general.
 
 ```{r}
-#| label: mrt-scl-pp
+#| label: fig-mrt-scl-pp
 #| fig-cap: 'Posterior predictive plot for the Murray River Turtle model.'
 
 pp_check(mod_mrt, ndraws = 100)
@@ -181,12 +188,12 @@ pp_check(mod_mrt, ndraws = 100)
 
 ## Interpreting the model outputs
 
-Now that we are happy the model has converged, we can see what the analysis is telling us.
+Now that we are happy the model has converged and the model assumptions are not violated, we can see what the analysis is telling us.
 
-First, let's interpret the model output. The *Intercept* is effectively the default option, which in this case is the scl for female MRT. The next term is labelled *sexMale* and is the key term, as it represents the difference in scl between the mean female and mean male scl. It seems that there is a clear difference in scl, with the estimated difference being `r round(summary(mod_mrt)$fixed[2, 1], 1)` with lower and upper 95% credible intervals (95% CI[^cred]) of `r round(summary(mod_mrt)$fixed[2, 3], 1)` and `r round(summary(mod_mrt)$fixed[2, 4], 1)` respectively. To see what this looks like visually, we can plot the estimated mean values with 95% credible intervals and prediction intervals[^pred]. Figure \@ref(fig:mrt-scl-est) highlights the difference in mean scl, but also shows that not all large MRT will be female.
+First, let's interpret the model output. The *Intercept* is effectively the default option, which in this case is the scl for female MRT. The next term is labelled *sexMale* and is the key term, as it represents the difference in scl between the mean female and mean male scl. It seems that there is a clear difference in scl, with the estimated difference being `r round(summary(mod_mrt)$fixed[2, 1], 1)` with lower and upper 95% credible intervals (95% CI[^cred]) of `r round(summary(mod_mrt)$fixed[2, 3], 1)` and `r round(summary(mod_mrt)$fixed[2, 4], 1)` respectively. To see what this looks like visually, we can plot the estimated mean values with 95% credible intervals and prediction intervals[^pred]. @fig-mrt-scl-est highlights the difference in mean scl, but also shows that not all large MRT will be female.
 
 ```{r}
-#| label: mrt-scl-est
+#| label: fig-mrt-scl-est
 #| fig-cap: 'A plot of the estimated straight carapace length (in centimetres) for each sex from the Murray River Turtle model. The black point is the mean, the thick grey vertical line is the 95% credible interval, while the thin grey line is the 95% prediciton interval.'
 
 prep_mrt <- df_mrt %>% select(sex) %>% distinct()
@@ -226,43 +233,6 @@ The Bayesian model was constructed in `stan` [@carpenter2017stan] via `R` [@R202
 \endgroup
 :::
 
-In the results section you may want to produce Figure \@ref(fig:mrt-scl-est) (maybe without the prediction intervals) as well as a table with the parameter estimates and the 95% credible intervals as shown below. Depending on the audience, maybe the parameter estimate go into an appendix.
-
-```{r tbl_mrt}
-#| label: tbl_mrt_mod
-#| tbl-cap: "Parameter estimates from the Murray River Turtle straight carapace length model"
-
-tb_mod_mrt <- tidy(mod_mrt)
-imp_mrt <- (tb_mod_mrt$conf.low*tb_mod_mrt$conf.high > 0) & (tb_mod_mrt$effect == 'fixed')
-tb_mod_mrt %>%
-  select(-component, -group) %>%
-  mutate(across(where(is.numeric), ~ round(.x, 3)),
-         effect = str_to_sentence(effect),
-         effect = str_replace(effect, 'Ran_pars', 'Random'),
-         term = c('Intercept', 'Sex: Male', 'Standard deviation')) %>% flextable() %>%
-  set_header_labels(values = c('Effect', 'Parameter', 'Estimate', 'S.E.', 'Lower', 'Upper')) %>%
-  add_header_row(colwidths = c(4, 2), values = c("", "95% Credible bound")) %>%
-  align( j=4:6, align='right', part='body' ) %>%
-  bold(i = imp_mrt) %>%
-  ari_theme()
-
-```
-
-::: {#result-mrt .greeting .message style="background: #CCDBEA; color: #004C97"}
-\begingroup
-\fontfamily{ppl}\selectfont
-
-<font size="4">
-
-*Results*
-
-</font>
-
-The model shows sex dimorphism in MRT. The average female MRT has a scl of `r round(tb_mod_mrt$estimate[1], 1)`cm (95% credible interval (CI): `r round(tb_mod_mrt$conf.low[1], 1)` - `r round(tb_mod_mrt$conf.high[1], 1)`cm), with male MRT being `r -round(tb_mod_mrt$estimate[2], 1)`cm smaller (95% credible interval (CI): `r -round(tb_mod_mrt$conf.high[2], 1)` - `r -round(tb_mod_mrt$conf.low[2], 1)`cm).
-
-\endgroup
-:::
-
 Potentially you may want or need to include a more formal definition of the model. If that is required, then it would be something like:
 
 ::: {#eq-mrt .greeting .message style="background: #CCDBEA; color: #004C97"}
@@ -286,3 +256,322 @@ $$
 
 \endgroup
 :::
+
+In the results section you may want to produce @fig-mrt-scl-est (maybe without the prediction intervals) as well as a table with the parameter estimates and the 95% credible intervals (see @tbl-mrt-mod). Depending on the audience, maybe the parameter estimate go into an appendix.
+
+```{r}
+#| label: tbl-mrt-mod
+#| tbl-cap: "Parameter estimates from the Murray River Turtle straight carapace length model"
+
+tb_mod_mrt <- tidy(mod_mrt)
+imp_mrt <- (tb_mod_mrt$conf.low*tb_mod_mrt$conf.high > 0) & (tb_mod_mrt$effect == 'fixed')
+tb_mod_mrt %>%
+  select(-component, -group) %>%
+  mutate(across(where(is.numeric), ~ round(.x, 3)),
+         effect = str_to_sentence(effect),
+         effect = str_replace(effect, 'Ran_pars', 'Random'),
+         term = c('Intercept', 'Sex: Male', 'Standard deviation')) %>% flextable() %>%
+  set_header_labels(values = c('Effect', 'Parameter', 'Estimate', 'S.E.', 'Lower', 'Upper')) %>%
+  add_header_row(colwidths = c(4, 2), values = c("", "95% Credible bound")) %>%
+  align( j=4:6, align='right', part='body' ) %>%
+  flextable::bold(i = imp_mrt) %>%
+  ari_theme()
+
+```
+
+::: {#result-mrt .greeting .message style="background: #CCDBEA; color: #004C97"}
+\begingroup
+\fontfamily{ppl}\selectfont
+
+<font size="4">
+
+*Results*
+
+</font>
+
+The model shows sex dimorphism in MRT. The average female MRT has a scl of `r round(tb_mod_mrt$estimate[1], 1)`cm (95% credible interval (CI): `r round(tb_mod_mrt$conf.low[1], 1)` - `r round(tb_mod_mrt$conf.high[1], 1)`cm), with male MRT being `r -round(tb_mod_mrt$estimate[2], 1)`cm smaller (95% credible interval (CI): `r -round(tb_mod_mrt$conf.high[2], 1)` - `r -round(tb_mod_mrt$conf.low[2], 1)`cm).
+
+\endgroup
+:::
+
+# The effect of crash grazing regimes on maximum plant height
+
+Wetland interventions have been carries out across many locations in Victoria. To assess the effectiveness of the interventions, a subset of 15 of these location were monitored over 6 year utilising a BACI[^baci] experimental design to determine the effect of crash grazing on wetlands. At each location there were 5 intervention and 5 control transects, with the interventions happening between the first and second years monitoring. The maximum plant height was among several criteria of interest. In particular, does the presence of crash grazing effect the maximum plant height. The relevant data can be found in `df_mh_cm_crash.RDS`.
+
+[^baci]: Before-After-Control-Intervention
+
+<aside>
+A Before-After-Control-Intervention (BACI) design is often used in environmental monitoring. Locations are monitored (with respect to one or more variables of interest) before and after an intervention occurs at some of the sites. The non-intervention locations act as a control. The locations should be relatively similar before the intervention, so that any difference after the intervention is due to the intervention.
+</aside>
+
+## Exploring the data and developing the model
+
+After we load the data an initial plot of the overall density (@fig-mh-den) shows that the data is positively skewed and the data is close to zero.
+
+```{r}
+#| cache: true
+df_mh_cm_crash <- readRDS('data/df_mh_cm_crash.RDS')
+```
+
+```{r}
+#| label: fig-mh-den
+#| fig-cap: 'A plot of the histogram of the maximum plant height with the kernel density estimate overlayed.'
+#| message: false
+
+ggplot(df_mh_cm_crash, aes(max_ht_cm)) +
+  geom_histogram(aes(y = after_stat(density)), alpha = 0.2) +
+  geom_density() +
+  xlab('Maximum plant height (cm)') +
+  ylab('Density')
+```
+
+Looking at the flow diagram, that means that we either need to transform the data to try and make it approximately normal or choose an alternative distribution to the normal distribution. We are going to do the latter, as the log-normal distribution may fit this data, given it is positively skewed (like the data) and can only take positive values (plant heights can't be negative). To check the effect of crash grazing on maximum plant height, the model has maximum plant height as a response to explanatory variables year and grazing treatment interacting. Given the data was from repeated visits to the same locations and transects, it is appropriate to use a mixed model with transect nested within location.
+
+$$\text{max_ht_cm} \sim \text{year} \times \text{grazing}$$
+<aside>
+If there is evidence of an interaction between year and grazing treatment, this can be used to infer that the treatment makes a difference.
+</aside>
+
+```{r}
+#| eval: false
+mod_mh_crash <- brm(max_ht_cm ~ exclusion * year + (1|location/transect), family = 'lognormal',
+                    data = df_mh_cm_crash, cores = 4)
+```
+
+```{r}
+#| cache: true
+#| include: false
+
+mod_mh_crash <- readRDS('data/mod_mh_crash.RDS')
+```
+
+### Checking the model converged
+
+From the model output below and the trace plots the model looks to have converged.
+
+```{r}
+mod_mh_crash
+```
+
+```{r}
+#| label: fig-mh-crash-chains
+#| fig-cap: 'The chains from each estimated parameter in the maximum plant height model.'
+#| message: false
+
+plot(mod_mh_crash, bins = 30)
+```
+
+### Checking the model assumptions
+
+The QQ plot (@fig-mh-crash-resid) does not show any violations of the log-normal distribution assumption. The other plot, however, shows a pattern in the residuals. Therefore, we should not use this model, and an alternative model should be used.
+
+```{r}
+#| label: fig-mh-crash-resid
+#| fig-cap: 'Residual plots for the maximum plant height model.'
+#| fig-height: 6
+
+check_brms(mod_mh_crash)
+```
+
+## Alternative model
+
+When the data is separated by exclusion treatment and year (@fig-mh-violin) the positive skew persists and maybe there is a change is maximum plant height over time and between treatments. However, the change over time does not seem to follow a linear (straight line) path.
+
+```{r}
+#| label: fig-mh-violin
+#| fig-cap: 'Combined boxplot and Violin plots of the maximum plant height over time and split by treatment group.'
+
+ggplot(df_mh_cm_crash %>% mutate(grazing = ifelse(exclusion == 'No', 'Grazing continued', 'Grazing excluded')), aes(year, max_ht_cm, group = year)) + geom_violin() +
+  geom_boxplot(fill = 'darkgrey', width = 0.5) +
+  geom_jitter(width = 0.1, height = 0) +
+  ylab('Maximum plant height (cm)') +
+  xlab('Time (years)') +
+  facet_wrap(.~ grazing)
+
+```
+
+Maybe after crash grazing was implemented (after the first year) the maximum plant height was steady at a greater height than before at the intervention transects. At the control transects, there may have been some change, but it is not consistent, potentially reflecting a greater variance. To check if there is just a step change after the intervention, we can swap year in the model to just before or after year 1.
+
+```{r}
+df_mh_cm_crash <- df_mh_cm_crash %>%
+  mutate(after = factor(ifelse(year == 1, 'Before', 'After'),
+                        levels = c('Before', 'After')))
+```
+
+$$\text{max_ht_cm} \sim \text{after} \times \text{grazing}$$
+
+```{r}
+#| eval: false
+mod_mh_crash_ba <- brm(max_ht_cm ~ after * exclusion + (1|location/transect), family = 'lognormal',
+                      data = df_mh_cm_crash, cores = 4)
+```
+
+```{r}
+#| cache: true
+#| include: false
+
+mod_mh_crash_ba <- readRDS('data/mod_mh_crash_ba.RDS')
+```
+
+### Checking the updated model assumptions
+
+Now the QQ plot and within group deviation plots look much better (@fig-mh-crash-ba-resid). There is still an issue with the variance being different between years after the intervention, but for the moment this is acceptable for what we are after. What options could be explore to address that issue?
+
+```{r}
+mod_mh_crash_ba
+```
+
+```{r}
+#| label: fig-mh-crash-ba-resid
+#| fig-cap: 'Residual plots for the maximum plant height model using before and after only, not year.'
+#| fig-height: 6
+
+check_brms(mod_mh_crash_ba)
+```
+
+The posterior predictive check looks okay (@fig-mh-crash-ba).
+
+```{r}
+#| label: fig-mh-crash-ba
+#| fig-cap: 'Posterior predictive plot for the maximum plant height model using before and after only, not year.'
+
+pp_check(mod_mh_crash_ba, ndraws = 100)
+```
+
+## Interpreting the model outputs
+
+To get a quick sense of the results we look at the plot of estimates for each combination (fig-mh-crash-ba-est). It seems that there was initially no difference in maximum plant height between exclusion and non-exclusion transects. After the intervention, the mean maximum plant heights increased across all transects, but at the herbivore exclusion transects, the increase in mean height was larger than at the non-exclusion size. However, if we want to be more formal about our conclusions that looking at the plot, we need to use the model output table.
+
+```{r}
+#| label: fig-mh-crash-ba-est
+#| fig-cap: 'A plot of the estimated maximum plant height (in centimetres) for each combination from the BACI model. The black point is the mean, the thick grey vertical line is the 95% credible interval, while the thin grey line is the 95% prediciton interval.'
+
+prep_mh_crash_ba <- df_mh_cm_crash %>% filter(location == 'A', transect == 'A_1') %>%
+  select(after, exclusion) %>% distinct()
+pred_mh_crash_ba <- cbind(prep_mh_crash_ba,
+                          fitted(mod_mh_crash_ba, newdata = prep_mh_crash_ba, re_formula = NA)) %>%
+  rename(lcl = Q2.5, ucl = Q97.5)
+ggplot(pred_mh_crash_ba, aes(exclusion, Estimate, ymin = lcl, ymax = ucl, group = after, shape = after, color = after)) +
+  geom_pointrange(position = position_dodge(width = 0.2)) +
+  ylab('Maximum plant height (cm)') +
+  xlab('Herbivore exclusion') +
+  theme(legend.title = element_blank())
+
+```
+
+The *Intercept* is effectively the default option, which in this case is the maximum plant height at the non-exclusion transects in year 1 (before the intervention). The next term is labelled *afterAfter* and represents the change in maximum plant height at non-exclusion transects. Simialrly the third term is *exclusionYes* and represents the difference in maximum plant height at exclusion transects compared to non-exclusion in year 1. The final fixed effect term is the interaction term[^interact] and it is the key term in the analysis. It represents the difference in maximum plant height at exclusion transects after the intervention not accounted for by each of those options independently.
+
+It seems that there was initially no difference in maximum plant height between exclusion and non-exclusion transects (the model estimate is `r round(summary(mod_mh_crash_ba)$fixed[3, 1], 2)`, 95% CI of `r round(summary(mod_mh_crash_ba)$fixed[3, 3], 2)` to `r round(summary(mod_mh_crash_ba)$fixed[3, 4], 2)`). After the intervention at exclusion transects, the maximum plant heights increased by a factor of `r round(exp(summary(mod_mh_crash_ba)$fixed[4, 1]), 2)` (95% CI: `r round(exp(summary(mod_mh_crash_ba)$fixed[4, 3]), 2)` — `r round(exp(summary(mod_mh_crash_ba)$fixed[3, 4]), 2)`) above what would expect if the interaction was not important. Note the increase is not the same as the parameter estimate from the model, as that is on the transformed (log) scale. To get back to the response scale, we need to back transform[^inverse] the estimate. Which means we are now talking about a multiplicative effect (factor) rather than additive.
+
+<aside>
+The inverse operation of the natural logarithm (usually written as $\log$ or $\ln$) is to take the exponential (coded as exp in `R` and `Excel`). Note that if $x = \log{y}$ then $y = e^x$. Additionally, from the index and log law you may remember from high school or university maths classes, if we are adding on the log scale, then we need to multiply on the exponential scale ($e^{a+b} = e^a \times e^b$ or $\log(a \times b) = \log a + \log b$)
+</aside>
+
+[^interact]: In `R` the interaction between two or more variables is signified by the colon (:).
+
+[^inverse]: The more current way of saying this is to use the "inverse operation".
+
+### Outputs should we include in our report/manuscript
+
+::: {#method-mrt .greeting .message style="background: #CCDBEA; color: #004C97"}
+\begingroup
+\fontfamily{ppl}\selectfont
+
+<font size="4">
+
+*Statistical methods*
+
+</font>
+
+The effect of crash grazing regimes on maximum plant height was assessed with a BACI design using a generalised linear mixed model with a log-normal distribution in a Bayesian framework. The model had maximum plant height as the response variable to two explanatory variables (the intervention and the time period) and their interaction and random effects for transects nested within location. The intervention was if crash grazing was used or livestock were excluded from sites. The time periods were marked as either before or after the intervention started.
+
+The Bayesian model was constructed in `stan` [@carpenter2017stan] via `R` [@R2025] using the package `brms` [@burkner2017brms].  Naïve prior distributions were used for each parameter estimated and the model was fitted using the No-U-Turn sampler. Parameters were estimated from four chains of 2000 iterations, 1000 of which were used as burn-in periods (total posterior samples = 4000). Model chains were run until the chains converged. Chains were considered converged using visual assessment and if all Gelman and Rubin’s convergence diagnostic potential scale reduction factors were less than 1.05 [@gelman2013bayesian]. Plots of residuals and posterior predictive checking (employing 100 samples) were used to ensure model adequacy.
+
+\endgroup
+:::
+
+If a more formal definition of the model is required, then it would be something like:
+
+::: {#eq-mh-crash .greeting .message style="background: #CCDBEA; color: #004C97"}
+\begingroup
+\fontfamily{ppl}\selectfont
+
+<font size="4">
+
+*Equation*
+
+</font>
+
+The maximum plant height ($Y_i$) for any transect is log-normally distributed, where the mean-log[^mean-log] ($\mu_i$) is a function of the intervention ($t_i$) and the time period ($v_i$). For transects with crash grazing $t_i = 0$, while for exclusion transect $t_i = 1$. For observations before the intervention, $v_i = 0$, and $v_i = 1$ otherwise.
+
+$$
+\begin{align}
+Y_i &\sim \text{LN}(\mu_i, \sigma^2) \\
+\mu_i &= \alpha + \beta_1 t_i + \beta_2 v_i + \beta_3 t_i v_i + \epsilon_{transect_i} \\
+\epsilon_{transect_i} & \sim \text{N}(\epsilon_{location_i}, \sigma_{transect_i}^2) \\
+\epsilon_{location_i} & \sim \text{N}(0, \sigma_{location_i}^2)
+\end{align}
+$$
+
+\endgroup
+:::
+
+[^mean-log]: Mean-log is used to emphasis that it is the mean of the log of the variable, not the mean of the variable itself. Similarly
+
+In the results section you may want to produce @fig-mh-crash-ba-est as well as a table with the parameter estimates and their 95% credible intervals (see @tbl-mh-crash-mod). Depending on the audience, maybe the parameter estimate go into an appendix.
+
+```{r}
+#| label: tbl-mh-crash-mod
+#| tbl-cap: "Parameter estimates from the maximum plant height response to crash grazing model"
+
+tb_mod_mh_crash <- tidy(mod_mh_crash_ba)
+imp_mh_crash <- (tb_mod_mh_crash$conf.low*tb_mod_mh_crash$conf.high > 0) & (tb_mod_mh_crash$effect == 'fixed')
+tb_mod_mh_crash %>%
+  select(-component) %>%
+  mutate(across(where(is.numeric), ~ round(.x, 3)),
+         effect = str_to_sentence(effect),
+         effect = str_replace(effect, 'Ran_pars', 'Random'),
+         term = c('Intercept', 'After intervention', 'Exclusion used',
+                  'After intervention and exclusion used',
+                  rep('Standard deviation', 3))) %>% flextable() %>%
+  set_header_labels(values = c('Effect', 'Source', 'Parameter', 'Estimate', 'S.E.',
+                               'Lower', 'Upper')) %>%
+  add_header_row(colwidths = c(5, 2), values = c("", "95% Credible bound")) %>%
+  align( j=5:7, align='right', part='body' ) %>%
+  bold(i = imp_mh_crash) %>%
+  ari_theme()
+
+```
+
+::: {#result-mh-crash .greeting .message style="background: #CCDBEA; color: #004C97"}
+\begingroup
+\fontfamily{ppl}\selectfont
+
+<font size="4">
+
+*Results*
+
+</font>
+
+The model shows strong evidence that excluding livestock from wetlands increased the maximum plant height. There was a `r 100*round(exp(summary(mod_mh_crash_ba)$fixed[4, 1])-1, 2)`% increase (95% CI: `r 100*round(exp(summary(mod_mh_crash_ba)$fixed[4, 3])-1, 2)` — `r 100*round(exp(summary(mod_mh_crash_ba)$fixed[3, 4])-1, 2)`%) in the maximum plant height compared to what would have been expected if time and intervention were independent.
+
+\endgroup
+:::
+
+# Group exercises
+
+Now that you are familiar with normal and log-normal generalised linear models, it is now your turn to try some.
+
+In groups of three or four could you please try at least one of the following small analysis tasks. As a group, you will need to follow the step to conduct your analysis, including:
+
+-   exploring the data;
+-   choosing the distribution;
+-   constructing the model;
+-   checking the convergence and assumptions;
+-   interpreting the results;
+
+If there is time and the technology permits, we may may ask some of the groups to give a quick 2 minute presentation on what they found.
+
+1.   Murray River Turtles are back, but this time we also have their weight. We want to know the relationship between weight and scl. The data set is `ex_mrt.RDS`. 🌶
+2.  We have length measurements for 300 Murray Cod. However, we only have weight measurements for 250. You need to estimate the missing 50 weights. The data set is `ex_mc_wt.RDS`. 🌶🌶
+3.  To measure the impact on productivity of fuel reduction burns, the plant dry weight of forbs and graminoids (combined) was measured at several different locations across Victoria at different times-since-fire and EVCs. Can you find the relationship between plant dry weight and time-since-fire and EVC. The data set is `ex_pdw.RDS`. 🌶🌶🌶
