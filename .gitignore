@@ -47,10 +47,11 @@ hexsticker/
 #rds files
 *.RDS
 
-_sessions/day3-discretes/data/
-_sessions/day3-discretes/day2-continuous.html
 _sessions/day2-discretes/data/
-_sessions/day2-discretes/day3-discretes.html
+_sessions/day2-discretes/day2_continuous_data.html
+
+_sessions/day3-discretes/data/
+_sessions/day3-discretes/day3-discretes.html
 
 .secrets
 
