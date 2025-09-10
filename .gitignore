@@ -45,10 +45,12 @@ hexsticker/
 /r_extra/
 
 #rds files
-.RDS
+*.RDS
 
 _sessions/day3-discretes/data/
-_sessions/day3-discretes/day3-discretes.html
+_sessions/day3-discretes/day2-continuous.html
+_sessions/day2-discretes/data/
+_sessions/day2-discretes/day3-discretes.html
 
 .secrets
 
